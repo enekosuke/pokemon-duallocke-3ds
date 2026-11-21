@@ -3,8 +3,8 @@
 Entorno completo, portátil y 100% autocontenido en una sola carpeta (`C:\Users\Usuario\Downloads\Pokemon-DualLocke-3DS`) para jugar **Pokémon Y (Nintendo 3DS, USA v1.0, Title ID `0004000000055E00`) Randomlocke / DualLocke PRO** en PC, con motor nativo ARM32 (Muerte Permanente + Hard Level Cap + Caramelos Raros infinitos en tiendas por 10₽), parches avanzados de RomFS (IA Experta + regulación de 3ªs evoluciones hasta el 4º Gimnasio) y multijugador online en 1 clic mediante Azahar + Radmin VPN.
 
 - **Repositorio GitHub (público, sin ROMs ni binarios pesados):** `https://github.com/enekosuke/pokemon-duallocke-3ds`
-- **Semillas ya usadas por Eneko (nunca repetir):** `20261121`, `65344194` (el script las excluye al generar una aleatoria).
-- **Semilla activa actual de Eneko:** `65344194` (semilla anterior respaldada en `saves-backup\save-seed-20261121-20261121-042353\main`).
+- **Semillas ya usadas por Eneko (nunca repetir):** `20261121`, `65344194`, `52824960` (el script las excluye al generar una aleatoria).
+- **Semilla activa actual de Eneko:** `52824960` (semillas anteriores respaldadas en `saves-backup\`).
 - **Accesos directos en el Escritorio de Eneko:**
   - `Jugar Pokemon Y Randomlocke.lnk` → `0-JUGAR-POKEMON-Y.bat`
   - `Jugar Online Pokemon Y.lnk` → `00-JUGAR-ONLINE-CON-AMIGO.bat`

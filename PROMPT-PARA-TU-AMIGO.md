@@ -42,7 +42,7 @@ PASO 3. COPIA DE SEGURIDAD DEL SAVE Y BORRADO LIMPIO
 - Comprueba que la carpeta data ya no existe.
 
 PASO 4. GENERAR EL SISTEMA COMPLETO CON UNA SEMILLA NUEVA
-- Semillas PROHIBIDAS (son de Eneko): 20261121 y 65344194. Tampoco repitas la semilla que ya tuviera yo antes si la conoces.
+- Semillas PROHIBIDAS (son de Eneko): 20261121, 65344194 y 52824960. Tampoco repitas la semilla que ya tuviera yo antes si la conoces.
 - Ejecuta, con Azahar cerrado:
   powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\randomize-auto.ps1
   Sin parámetros genera una semilla aleatoria que no coincide con las prohibidas. Si prefieres elegirla tú, usa -Seed <número de 8 cifras distinto de las prohibidas>.
@@ -57,7 +57,7 @@ Dentro de tools\azahar\user\load\mods\0004000000055E00\ comprueba:
 - romfs\a\0\1\2 existe y pesa entre 850000 y 900000 bytes (si pesa cerca de 966000 o más, el parche de evoluciones falló: avísame, no juegues).
 - romfs\a\0\3\8, romfs\a\2\2\0, romfs\a\2\1\5, romfs\a\2\1\8 existen.
 - presets\pro-rules.json existe con permadeath true, level_cap true y mart_candies true.
-- En la salida del paso 4 aparecen estas confirmaciones: "IA Experta Maxima (0x07) aplicada a N entrenadores/gimnasios" (N cercano a 784), "Precio del Caramelo Raro ajustado a 10 pokedolares" y "MOTOR NATIVO ARM32 PRO APLICADO".
+- En la salida del paso 4 aparecen estas confirmaciones: "IA Experta Maxima (0x07) aplicada a N entrenadores/gimnasios" (N cambia con cada semilla, cualquier número mayor que 0 vale), "Precio del Caramelo Raro ajustado a 10 pokedolares" y "MOTOR NATIVO ARM32 PRO APLICADO".
 - git status no debe mostrar ROMs ni tools\ (están ignorados).
 
 PASO 6. ACCESOS DIRECTOS EN EL ESCRITORIO
