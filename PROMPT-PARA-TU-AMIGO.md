@@ -61,6 +61,7 @@ Dentro de tools\azahar\user\load\mods\0004000000055E00\ comprueba:
 - exefs\code.bin existe (unos 5 MB) y exefs\code.ips existe y pesa EXACTAMENTE 630 bytes.
 - romfs\a\0\1\2 existe y pesa entre 850000 y 900000 bytes (si pesa cerca de 966000 o más, el parche de evoluciones falló: avísame, no juegues).
 - romfs\a\0\3\8, romfs\a\2\2\0, romfs\a\2\1\5, romfs\a\2\1\8 existen.
+- romfs\DllBattle.cro existe y pesa 1040384 bytes (arreglo del cuelgue al ganar EXP en el tope de nivel). La salida del paso 4 debe decir "Tope en combate (DllBattle.cro): aplicado".
 - presets\pro-rules.json existe con permadeath true, level_cap true y mart_candies true.
 - En la salida del paso 4 aparecen estas confirmaciones: "IA Experta Maxima (0x07) aplicada a N entrenadores/gimnasios" (N cambia con cada semilla, cualquier número mayor que 0 vale), "Precio del Caramelo Raro ajustado a 10 pokedolares" y "MOTOR NATIVO ARM32 PRO APLICADO".
 - git status no debe mostrar ROMs ni tools\ (están ignorados).
