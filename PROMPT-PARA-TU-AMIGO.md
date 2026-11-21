@@ -19,10 +19,15 @@ PASO 0. PREPARAR EL EQUIPO (8 GB de RAM)
 - Comprueba la RAM: (Get-CimInstance Win32_ComputerSystem).TotalPhysicalMemory/1GB. Debe salir unos 8.
 - Comprueba que existen: roms\*.cci, tools\azahar\azahar.exe, tools\upr-fvx\UPR-FVX.jar, tools\upr-fvx\java\bin\java.exe.
 
-PASO 1. ACTUALIZAR EL CÓDIGO
-- cd C:\Users\Enara\Downloads\Pokemon-DualLocke-3DS
-- git pull --ff-only. Si falla por cambios locales: git fetch origin y después git reset --hard origin/main. Esto NO toca roms\ ni tools\ (están en .gitignore).
-- Comprueba con git log -1 que estás en el último commit y que existen scripts\enhance-romfs.ps1, scripts\rom-engine.ps1 y scripts\randomize-auto.ps1.
+PASO 1. ACTUALIZAR EL CÓDIGO (con o sin Git)
+- Si el comando git existe Y la carpeta tiene .git: cd C:\Users\Enara\Downloads\Pokemon-DualLocke-3DS y git pull --ff-only (si falla por cambios locales: git fetch origin y git reset --hard origin/main).
+- Si git NO existe o la carpeta no tiene .git (instalación por ZIP): NO instales Git y NO te pares, usa este método sin Git:
+  $tmp = Join-Path $env:TEMP "dl3ds"; Remove-Item $tmp -Recurse -Force -ErrorAction SilentlyContinue; New-Item -ItemType Directory $tmp | Out-Null
+  Invoke-WebRequest "https://github.com/enekosuke/pokemon-duallocke-3ds/archive/refs/heads/main.zip" -OutFile "$tmp\main.zip"
+  Expand-Archive "$tmp\main.zip" -DestinationPath $tmp -Force
+  robocopy "$tmp\pokemon-duallocke-3ds-main" "C:\Users\Enara\Downloads\Pokemon-DualLocke-3DS" /E /XD roms tools saves-backup .git /NFL /NDL /NJH /NJS
+  (robocopy devuelve códigos 0 a 7 cuando va bien; solo 8 o más es error.) Esto sobrescribe scripts, presets, README y .bat con la última versión y NO toca roms\, tools\ ni saves-backup\. Después borra $tmp.
+- Comprueba que existen y están actualizados: scripts\enhance-romfs.ps1 (debe contener el texto "Lz11CompressSafe" y "MAXCHAIN"), scripts\randomize-auto.ps1 (debe contener "Xmx3072M") y scripts\rom-engine.ps1.
 - NO ejecutes setup.ps1 ni 1-Instalar-o-Reparar-Todo.bat (ya está todo instalado y no hace falta).
 
 PASO 2. CONFIGURACIÓN LIGERA DE AZAHAR (debe quedar EXACTA)
