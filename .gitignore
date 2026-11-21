@@ -15,7 +15,8 @@ saves-backup/*
 mods-para-compartir/*
 !mods-para-compartir/LEEME.txt
 
-# Archivos temporales
+# Archivos temporales y config personal
+presets/online-config.json
 *.log
 *.tmp
 .DS_Store

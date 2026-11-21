@@ -96,10 +96,16 @@ foreach ($td in $titleDirs) {
     Write-Host "[OK] Mod instalado automaticamente en Azahar: $dest" -ForegroundColor Green
 }
 
-# Aplicar automaticamente el parche ARM32 de Muerte Permanente (a partir de 1a medalla) si es Pokemon Y
-$permadeathScript = Join-Path $BaseDir "scripts\nuzlocke-permadeath.ps1"
-if ((Test-Path $permadeathScript) -and (Test-Path (Join-Path $ModsTargetRoot "0004000000055E00"))) {
-    & $permadeathScript -Apply
+# Aplicar mejoras PRO de RomFS (IA Experta 0x07 + Caramelo Raro 10p + Regulacion 3as evoluciones hasta 4o Gimnasio)
+$enhanceScript = Join-Path $BaseDir "scripts\enhance-romfs.ps1"
+if ((Test-Path $enhanceScript) -and (Test-Path (Join-Path $ModsTargetRoot "0004000000055E00\romfs"))) {
+    & $enhanceScript
+}
+
+# Aplicar automaticamente el Motor Nativo ARM32 PRO (Muerte Permanente + Hard Level Cap + Caramelos en Tiendas)
+$romEngineScript = Join-Path $BaseDir "scripts\rom-engine.ps1"
+if ((Test-Path $romEngineScript) -and (Test-Path (Join-Path $ModsTargetRoot "0004000000055E00"))) {
+    & $romEngineScript -Apply
 }
 
 Write-Host ""

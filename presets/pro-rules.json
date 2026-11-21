@@ -1,0 +1,20 @@
+﻿{
+    "permadeath":  true,
+    "min_badges":  1,
+    "on_wipe_mode":  0,
+    "allow_wild":  true,
+    "allow_trainer":  true,
+    "level_cap":  true,
+    "caps":  [
+                 12,
+                 25,
+                 32,
+                 34,
+                 37,
+                 42,
+                 48,
+                 59,
+                 68
+             ],
+    "mart_candies":  true
+}

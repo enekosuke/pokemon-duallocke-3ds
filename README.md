@@ -15,17 +15,19 @@ Una vez completada la instalación inicial:
 
 | Archivo / Carpeta | Para qué sirve |
 | :--- | :--- |
-| `0-JUGAR-POKEMON-Y.bat` | **Botón de 1 clic:** arranca directamente **Pokémon Y Randomlocke** en Azahar. |
+| `00-JUGAR-ONLINE-CON-AMIGO.bat` | **Asistente Online 1-Clic:** levanta la sala `azahar-room.exe` automáticamente, detecta y copia tu IP de Radmin VPN (`26.x.x.x`), hace test de ping y pre-rellena Azahar (o abre tu `main` directo en PKHeX para Showdown). |
+| `0-JUGAR-POKEMON-Y.bat` | **Botón de 1 clic:** arranca directamente **Pokémon Y Randomlocke PRO** en Azahar. |
 | `1-Instalar-o-Reparar-Todo.bat` | Instala y preconfigura todo (`Azahar`, `UPR FVX`, `PKHeX`, `.NET`, `qt-config.ini`, drivers y mod automático si hay ROM). |
 | `2-Abrir-Randomizer.bat` | Abre **Universal Pokémon Randomizer FVX** por si queréis cambiar opciones a mano. |
-| `3-Abrir-Azahar.bat` | Abre el menú principal del emulador **Azahar** (en español y 2x HD). |
-| `4-Abrir-PKHeX.bat` | Abre **PKHeX** para añadir Caramelos Raros / objetos o exportar tu equipo a Showdown. |
+| `3-Abrir-Azahar.bat` | Abre el menú principal del emulador **Azahar** (en español). |
+| `4-Abrir-PKHeX.bat` | Abre **PKHeX** para editar objetos o exportar tu equipo a Showdown. |
 | `5-Instalar-Mod-LayeredFS.bat` | Instala manualmente una carpeta de mod LayeredFS en Azahar. |
 | `6-Backup-Save.bat` | Hace copia de seguridad de tu partida guardada (`main`) y te muestra su ruta exacta. |
 | `7-Tracker-DualLocke.html` | Tracker visual en navegador (marcador PVP entre vosotros, vidas, muertes, rutas y *Level Caps*). |
-| `8-Configurar-Muerte-Permanente.bat` | **Motor nativo ARM32 (parche `code.ips`/`code.bin`):** hace que a partir de la 1ª medalla (configurable `0..8` o ON/OFF), cualquier Pokémon debilitado al terminar un combate desaparezca automáticamente del equipo (inmune a combates PVP por PSS y con protección anti-crash en blackout). |
-| `presets/pokemon-y-randomlocke.rnqs` | Preset exacto de reglas (Pokémon, habilidades sin Superguarda, ataques, MTs, objetos, gimnasios/entrenadores random + evoluciones por intercambio activadas + Caramelos baratos en tiendas). |
-| `scripts/randomize-auto.ps1` | Genera e instala automáticamente el mod LayeredFS con las mismas reglas (`presets/pokemon-y-randomlocke.rnqs`) y una **semilla aleatoria nueva** por defecto (o `-Seed <numero>` si queréis compartir la misma). |
+| `8-Configurar-Reglas-Pro.bat` | **Motor Nativo ARM32 PRO (`code.ips`/`code.bin`):** activa/personaliza **Muerte Permanente** (tras N medallas, PVP inmune), **Hard Level Cap** (`[12, 25, 32, 34, 37, 42, 48, 59, 68]`, bloquea Caramelos Raros y EXP en combate) y **Caramelos Raros Infinitos en Tiendas por 10₽**. |
+| `scripts/enhance-romfs.ps1` | Aplica **IA Experta máxima (`AI=7`)** a los 784 entrenadores/gimnasios, fija el **precio del Caramelo Raro en 10₽** y **regula las 3ªs evoluciones/legendarios** (bloqueados antes del 4º Gimnasio y 100% desbloqueados a partir de Ruta 13). |
+| `presets/pokemon-y-randomlocke.rnqs` | Preset PRO (Pokémon, habilidades sin Superguarda, ataques, **MT aleatorias**, objetos, gimnasios/entrenadores con mejor moveset, objetos equipados y +1 Pokémon en jefes + evoluciones por intercambio activadas). |
+| `scripts/randomize-auto.ps1` | Genera e instala todo automáticamente (UPR FVX + `enhance-romfs.ps1` + `rom-engine.ps1`) con semilla aleatoria nueva (o `-Seed <numero>`). |
 
 ---
 
