@@ -58,7 +58,7 @@ PASO 4. GENERAR EL SISTEMA COMPLETO CON UNA SEMILLA NUEVA
 
 PASO 5. VERIFICAR EN DISCO (muéstrame los resultados)
 Dentro de tools\azahar\user\load\mods\0004000000055E00\ comprueba:
-- exefs\code.bin existe (unos 5 MB) y exefs\code.ips existe y pesa EXACTAMENTE 604 bytes.
+- exefs\code.bin existe (unos 5 MB) y exefs\code.ips existe y pesa EXACTAMENTE 630 bytes.
 - romfs\a\0\1\2 existe y pesa entre 850000 y 900000 bytes (si pesa cerca de 966000 o más, el parche de evoluciones falló: avísame, no juegues).
 - romfs\a\0\3\8, romfs\a\2\2\0, romfs\a\2\1\5, romfs\a\2\1\8 existen.
 - presets\pro-rules.json existe con permadeath true, level_cap true y mart_candies true.

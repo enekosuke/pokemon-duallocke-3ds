@@ -86,7 +86,7 @@ Todo el pipeline se aplica automáticamente al ejecutar `scripts/randomize-auto.
 2. **IA Experta máxima (`scripts/enhance-romfs.ps1` → `romfs/a/0/3/8`):**
    - Activa los bits `0x07` (`Basic | EvaluateAttack | Expert`) en los **784 entrenadores y Líderes de Gimnasio**.
 3. **Caramelos Raros infinitos por 10₽ en todas las Tiendas (`rom-engine.ps1` + `enhance-romfs.ps1`):**
-   - Reemplaza *Antihielo* (`0x0014`) por *Caramelo Raro* (`0x0032`) en las **8 listas de Tienda Pokémon** dentro de `code.bin` (desde Ciudad Novarte / antes del 1º Gimnasio hasta la Liga).
+   - Hay 9 listas de Tienda Pokémon, una por número de medallas (0..8). Reemplaza *Antihielo* (`0x0014`) por *Caramelo Raro* (`0x0032`) en las listas de 1 a 8 medallas, y **amplía la lista de 0 medallas** (solo Poké Ball y Poción) a `[Poké Ball, Poción, Caramelo Raro]`: la lista nueva (6 bytes) va en `0x0053BFF4`, el puntero de la tabla `0x005ADCE8` apunta a ella y el contador `0x0053C6E4` pasa de 2 a 3. Así hay caramelos desde la primera tienda.
    - Ajusta el precio del ítem `#50` en `romfs/a/2/2/0` de `480` (`4800₽`) a `1` (`10₽`).
 4. **Hard Level Cap nativo ARM32 (`scripts/rom-engine.ps1`):**
    - Topes por defecto según número de medallas (`0..8`): **`[12, 25, 32, 34, 37, 42, 48, 59, 68]`**.

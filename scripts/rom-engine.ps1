@@ -80,6 +80,18 @@ $MartIceHealOffsets = @(
     0x43C980, # Shop 7
     0x43C9A6  # Shop 8
 )
+# Tienda de 0 medallas (lista 0 = [Poke Ball, Pocion], solo 2 objetos): se amplia a [Poke Ball, Pocion, Caramelo Raro]
+# La lista nueva se guarda en 6 bytes libres de .text (0x0053BFF4, justo tras el bloque NUZL), se redirige el puntero
+# de la tabla de tiendas (0x005ADCE8) y se sube el contador de objetos (0x0053C6E4) de 2 a 3.
+$Mart0ListOff  = 0x0053BFF4 - $CodeBase
+$Mart0PtrOff   = 0x005ADCE8 - $CodeBase
+$Mart0CountOff = 0x0053C6E4 - $CodeBase
+$Mart0ListNew  = [byte[]]@(0x04,0x00, 0x11,0x00, 0x32,0x00)        # Poke Ball, Pocion, Caramelo Raro
+$Mart0ListOld  = [byte[]]@(0,0,0,0,0,0)
+$Mart0PtrNew   = [byte[]]@(0xF4,0xBF,0x53,0x00)                    # 0x0053BFF4
+$Mart0PtrOld   = [byte[]]@(0x9E,0xC8,0x53,0x00)                    # 0x0053C89E (lista original)
+$Mart0CountNew = [byte[]]@(3)
+$Mart0CountOld = [byte[]]@(2)
 $RareCandyU16 = [byte[]]@(0x32, 0x00) # Item ID 50 (Caramelo Raro)
 $IceHealU16   = [byte[]]@(0x14, 0x00) # Item ID 20 (Antihielo original)
 
@@ -172,6 +184,9 @@ function Apply-All($cfg) {
         foreach ($mo in $MartIceHealOffsets) {
             [void]$records.Add(@($mo, $RareCandyU16))
         }
+        [void]$records.Add(@($Mart0ListOff,  $Mart0ListNew))
+        [void]$records.Add(@($Mart0PtrOff,   $Mart0PtrNew))
+        [void]$records.Add(@($Mart0CountOff, $Mart0CountNew))
     }
 
     $modDir   = Join-Path $BaseDir "tools\azahar\user\load\mods\$TitleId"
@@ -220,6 +235,12 @@ function Apply-All($cfg) {
         foreach ($mo in $MartIceHealOffsets) {
             [Array]::Copy($mBytes, 0, $data, $mo, 2)
         }
+        $m0l = if ($cfg.mart_candies) { $Mart0ListNew }  else { $Mart0ListOld }
+        $m0p = if ($cfg.mart_candies) { $Mart0PtrNew }   else { $Mart0PtrOld }
+        $m0c = if ($cfg.mart_candies) { $Mart0CountNew } else { $Mart0CountOld }
+        [Array]::Copy($m0l, 0, $data, $Mart0ListOff, $m0l.Length)
+        [Array]::Copy($m0p, 0, $data, $Mart0PtrOff, $m0p.Length)
+        [Array]::Copy($m0c, 0, $data, $Mart0CountOff, $m0c.Length)
         [System.IO.File]::WriteAllBytes($lumaBin, $data)
         Copy-Item $lumaBin $exefsBin -Force
     }
