@@ -102,6 +102,10 @@ Todo el pipeline se aplica automáticamente al ejecutar `scripts/randomize-auto.
    - Lee el árbol evolutivo real de `a/2/1/5` (89 especies de 3ª etapa) y los BST de `a/2/1/8`.
    - En las **25 zonas previas al 4º Gimnasio** (Rutas 2–12, Bosque Novarte, Gruta Conexión, Cueva Reflejos, Bahía Azul…), devoluciona encuentros salvajes de 3ª etapa a su 2ª etapa y sustituye legendarios con BST ≥ 580 por Pokémon de 1ª/2ª etapa (sin tocar caña buena/súper ni el resto del juego).
    - A partir del **4º Gimnasio (Ruta 13, Gruta Helada, Calle Victoria y resto de Kalos)** todas las 3ªs evoluciones y legendarios quedan **100% desbloqueados**.
+6b. **Evoluciones por intercambio → por nivel (`scripts/enhance-romfs.ps1` → `romfs/a/2/1/5`, `-SkipTradeEvo` para desactivarlo):**
+   - UPR FVX ya pasa los intercambios simples (Kadabra, Machoke, Graveler, Haunter, Boldore, Gurdurr, Phantump, Pumpkaboo) a **nivel 37**.
+   - Los de objeto, que UPR deja como "subir de nivel con el objeto equipado", y Karrablast/Shelmet pasan a nivel normal: Onix, Scyther, Porygon, Feebas, Spritzee, Swirlix, Karrablast, Shelmet y Clamperl (macho → Huntail, hembra → Gorebyss) a **nivel 30**; Poliwhirl → Politoed a **37** (Poliwrath sigue con Piedra Agua); Seadra, Porygon2, Dusclops, Electabuzz y Magmar a **45**; Rhydon a **50**.
+   - Se edita en el sitio (mismo tamaño); volver a ejecutarlo no cambia nada.
 7. **Multijugador Online 1-Clic (`00-JUGAR-ONLINE-CON-AMIGO.bat` / `scripts/play-online.ps1`):**
    - `[1] Crear Sala (Anfitrión)`: abre Radmin VPN, detecta tu IP `26.x.x.x` y la copia al portapapeles, arranca `azahar-room.exe` (`DualLocke3DS`, puerto `24872`), pre-rellena `127.0.0.1` en Azahar y lanza el juego.
    - `[2] Unirse a Sala (Amigo)`: abre Radmin VPN, guarda IP + apodo en `presets/online-config.json`, prueba conectividad (`ping`), pre-rellena Azahar y lanza el juego.

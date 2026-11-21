@@ -5,12 +5,15 @@
 #    3. Regulacion de 3as Evoluciones: bloquea 3as evoluciones y legendarios
 #       (BST >= 580) en las 25 rutas/cuevas ANTERIORES al 4o Gimnasio, y las
 #       desbloquea al 100% a partir del 4o Gimnasio (Ruta 13 en adelante)!
+#    4. Evoluciones por intercambio -> por nivel (a/2/1/5): Onix, Scyther, Porygon,
+#       Seadra, Feebas, Clamperl, Karrablast/Shelmet, Spritzee, Swirlix... sin objeto ni cambio
 # ==============================================================================
 
 param(
     [switch]$SkipAI,
     [switch]$SkipCandyPrice,
-    [switch]$SkipEvoGate
+    [switch]$SkipEvoGate,
+    [switch]$SkipTradeEvo
 )
 
 $ErrorActionPreference = "Stop"
@@ -371,6 +374,79 @@ public static class PokemonYRomfsEnhancer
         }
     }
 
+    // 4. Evoluciones por intercambio -> por nivel (a/2/1/5, en el sitio, mismo tamano).
+    //    UPR FVX ya pasa los intercambios simples a nivel 37, pero deja los de objeto como
+    //    "subir de nivel con el objeto equipado" (metodos 19/20) y Karrablast/Shelmet como
+    //    "subir de nivel con el otro en el equipo" (metodo 22). Aqui se pasan a nivel normal.
+    //    Entradas: 8 x (u16 metodo, u16 parametro, u16 especie destino). Metodo 4 = nivel.
+    public static int PatchTradeEvolutions(string evoPath)
+    {
+        // objeto de intercambio -> nivel de evolucion
+        var itemLevel = new Dictionary<int, int> {
+            {221, 37}, // Roca del Rey   (Poliwhirl -> Politoed)
+            {233, 30}, // Revest. Metalico (Onix -> Steelix, Scyther -> Scizor)
+            {235, 45}, // Escama Dragon  (Seadra -> Kingdra)
+            {252, 30}, // Mejora         (Porygon -> Porygon2)
+            {324, 45}, // Disco Extrano  (Porygon2 -> Porygon-Z)
+            {537, 30}, // Escama Bella   (Feebas -> Milotic)
+            {325, 45}, // Tela Terrible  (Dusclops -> Dusknoir)
+            {322, 45}, // Electrizador   (Electabuzz -> Electivire)
+            {323, 45}, // Magmatizador   (Magmar -> Magmortar)
+            {321, 50}, // Protector      (Rhydon -> Rhyperior)
+            {647, 30}, // Saquito Fragante (Spritzee -> Aromatisse)
+            {646, 30}, // Dulce de Nata  (Swirlix -> Slurpuff)
+            {226, 30}, // Diente Marino  (Clamperl -> Huntail, macho)
+            {227, 30}, // Escama Marina  (Clamperl -> Gorebyss, hembra)
+        };
+        byte[] d = File.ReadAllBytes(evoPath);
+        int hl = BitConverter.ToInt32(d, 4);
+        int doff = BitConverter.ToInt32(d, 0x10);
+        int flen = BitConverter.ToInt32(d, hl + 4);
+        int fb = hl + flen;
+        int cnt = BitConverter.ToUInt16(d, hl + 8);
+        int changed = 0;
+        for (int sp = 1; sp < cnt && sp <= 721; sp++)
+        {
+            int p = fb + 12 + BitConverter.ToInt32(d, hl + 12 + sp * 4);
+            int s = doff + BitConverter.ToInt32(d, p + 4);
+            int sz = BitConverter.ToInt32(d, p + 12);
+            int slots = Math.Min(8, sz / 6);
+            var outList = new List<int[]>();
+            var seen = new HashSet<int>();
+            bool any = false;
+            for (int k = 0; k < slots; k++)
+            {
+                int o = s + k * 6;
+                int m = BitConverter.ToUInt16(d, o), prm = BitConverter.ToUInt16(d, o + 2), tgt = BitConverter.ToUInt16(d, o + 4);
+                if (m == 0) continue;
+                bool conv = true;
+                if ((m == 19 || m == 20) && itemLevel.ContainsKey(prm)) {
+                    m = (sp == 366) ? (prm == 226 ? 23 : 24) : 4;     // Clamperl: macho / hembra
+                    prm = itemLevel[prm];
+                } else if (m == 22 && ((sp == 588 && prm == 616) || (sp == 616 && prm == 588))) {
+                    m = 4; prm = 30;                                   // Karrablast / Shelmet
+                } else if (m == 5 || m == 6 || m == 7) {
+                    m = 4; prm = 37;                                   // por si quedara algun intercambio puro
+                } else conv = false;
+                if (conv) { any = true; changed++; }
+                if (conv && seen.Contains(tgt)) continue;              // duplicado dia/noche -> fuera
+                seen.Add(tgt);
+                outList.Add(new int[] { m, prm, tgt });
+            }
+            if (!any) continue;
+            for (int k = 0; k < slots; k++)                            // reescribir compactado
+            {
+                int o = s + k * 6;
+                int m = 0, prm = 0, tgt = 0;
+                if (k < outList.Count) { m = outList[k][0]; prm = outList[k][1]; tgt = outList[k][2]; }
+                d[o] = (byte)m; d[o + 1] = (byte)(m >> 8); d[o + 2] = (byte)prm; d[o + 3] = (byte)(prm >> 8);
+                d[o + 4] = (byte)tgt; d[o + 5] = (byte)(tgt >> 8);
+            }
+        }
+        if (changed > 0) File.WriteAllBytes(evoPath, d);
+        return changed;
+    }
+
     // 3. Regulate Stage-3 evolutions & 580+ BST legendaries before Gym 4 in a/0/1/2
     public static int PatchPreGym4Encounters(string encPath, string evoPath, string personalPath)
     {
@@ -529,5 +605,15 @@ if (-not $SkipEvoGate) {
         Write-Host "       (A partir del 4o Gimnasio / Ruta 13 en adelante TODAS las 3as evoluciones estan 100% desbloqueadas!)" -ForegroundColor Cyan
     } else {
         Write-Host "  [AVISO] Faltan GARCs a/0/1/2, a/2/1/5 o a/2/1/8 en romfs." -ForegroundColor Yellow
+    }
+}
+
+if (-not $SkipTradeEvo) {
+    $evoPath = Join-Path $RomfsDir "a\2\1\5"
+    if (Test-Path $evoPath) {
+        $n = [PokemonYRomfsEnhancer]::PatchTradeEvolutions($evoPath)
+        Write-Host "  [OK] Evoluciones por intercambio pasadas a nivel ($n cambios; 0 = ya estaba aplicado)." -ForegroundColor Green
+    } else {
+        Write-Host "  [AVISO] No se encontro a/2/1/5 en romfs." -ForegroundColor Yellow
     }
 }
