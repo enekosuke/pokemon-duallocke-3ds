@@ -1,15 +1,17 @@
 # ==============================================================================
 #  Pokemon DualLocke 3DS - Instalador Automatico (Windows)
 #  Instala y configura de forma portatil:
-#    - Azahar 2126.2 (Emulador 3DS portatil con salas multijugador)
+#    - Azahar 2126.2 (Emulador 3DS portatil preconfigurado en espanol y HD 2x)
 #    - Universal Pokemon Randomizer FVX v1.6.3 (con Java incluido)
 #    - PKHeX (Editor de partidas para Caramelos Raros y exportar a Showdown)
 #    - Verificacion de .NET Desktop Runtime, Radmin VPN y driver de GPU
+#    - Si ya hay ROM en roms\, aplica automaticamente el Randomlocke (seed fija)
 # ==============================================================================
 
 param(
     [switch]$InstallRadminVPN,
-    [switch]$ForceRedownload
+    [switch]$ForceRedownload,
+    [switch]$SkipAutoRandomize
 )
 
 $ErrorActionPreference = "Stop"
@@ -21,6 +23,7 @@ $ToolsDir = Join-Path $BaseDir "tools"
 $AzaharDir = Join-Path $ToolsDir "azahar"
 $UprDir = Join-Path $ToolsDir "upr-fvx"
 $PkhexDir = Join-Path $ToolsDir "pkhex"
+$RomsDir = Join-Path $BaseDir "roms"
 
 $AzaharVersion = "2126.2"
 $AzaharUrl = "https://github.com/azahar-emu/azahar/releases/download/$AzaharVersion/azahar-windows-msvc-$AzaharVersion.zip"
@@ -31,17 +34,24 @@ function Write-Step($msg) {
     Write-Host ""
     Write-Host ">>> $msg" -ForegroundColor Cyan
 }
+function Write-Ok($msg) { Write-Host "  [OK] $msg" -ForegroundColor Green }
+function Write-Warn($msg) { Write-Host "  [AVISO] $msg" -ForegroundColor Yellow }
 
-function Write-Ok($msg) {
-    Write-Host "  [OK] $msg" -ForegroundColor Green
-}
-
-function Write-Warn($msg) {
-    Write-Host "  [AVISO] $msg" -ForegroundColor Yellow
-}
-
-function Write-Err($msg) {
-    Write-Host "  [ERROR] $msg" -ForegroundColor Red
+function Set-IniValue($lines, $key, $value) {
+    $escaped = [regex]::Escape($key)
+    $replaced = $false
+    $out = foreach ($line in $lines) {
+        if ($line -match "^$escaped=") {
+            $replaced = $true
+            "$key=$value"
+        } else {
+            $line
+        }
+    }
+    if (-not $replaced) {
+        $out += "$key=$value"
+    }
+    return ,$out
 }
 
 Write-Host "============================================================" -ForegroundColor Magenta
@@ -50,10 +60,10 @@ Write-Host "   Carpeta: $BaseDir" -ForegroundColor Magenta
 Write-Host "============================================================" -ForegroundColor Magenta
 
 # 1. Crear carpetas necesarias
-Write-Step "1/6 Creando estructura de carpetas..."
+Write-Step "1/7 Creando estructura de carpetas..."
 @(
     $ToolsDir,
-    (Join-Path $BaseDir "roms"),
+    $RomsDir,
     (Join-Path $BaseDir "mods-para-compartir"),
     (Join-Path $BaseDir "saves-backup")
 ) | ForEach-Object {
@@ -61,8 +71,8 @@ Write-Step "1/6 Creando estructura de carpetas..."
 }
 Write-Ok "Estructura de carpetas lista."
 
-# 2. Comprobar tarjeta grafica y fecha del driver (muy importante para 3DS/Vulkan)
-Write-Step "2/6 Comprobando tarjeta grafica y drivers..."
+# 2. Comprobar tarjeta grafica y fecha del driver
+Write-Step "2/7 Comprobando tarjeta grafica y drivers..."
 try {
     $gpus = Get-CimInstance Win32_VideoController
     foreach ($gpu in $gpus) {
@@ -71,12 +81,12 @@ try {
         if ($gpu.DriverDate) {
             $drvDate = [datetime]$gpu.DriverDate
             $drvDateStr = $drvDate.ToString("yyyy-MM-dd")
-            if ($drvDate.Year -lt 2022) { $isOld = $true }
+            if ($drvDate.Year -lt 2023) { $isOld = $true }
         }
         Write-Host "  GPU detectada: $($gpu.Name) | Driver: $($gpu.DriverVersion) ($drvDateStr)"
         if ($isOld -and ($gpu.Name -match "NVIDIA|AMD|Radeon|GeForce")) {
-            Write-Warn "El driver de '$($gpu.Name)' es antiguo ($drvDateStr)."
-            Write-Warn "Azahar (3DS) necesita drivers actualizados para Vulkan/OpenGL."
+            Write-Warn "ATENCION: El driver de '$($gpu.Name)' es muy antiguo ($drvDateStr)."
+            Write-Warn "Azahar (3DS) necesita drivers recientes para funcionar sin fallos graficos."
             if ($gpu.Name -match "NVIDIA|GeForce") {
                 Write-Warn "Descarga el driver mas reciente en: https://www.nvidia.com/es-es/drivers/"
             }
@@ -87,10 +97,9 @@ try {
 }
 
 # 3. Instalar Azahar (Emulador 3DS portatil)
-Write-Step "3/6 Instalando Azahar $AzaharVersion (Emulador de 3DS)..."
+Write-Step "3/7 Instalando Azahar $AzaharVersion (Emulador de 3DS)..."
 $azaharExe = Join-Path $AzaharDir "azahar.exe"
 if ($ForceRedownload -and (Test-Path $AzaharDir)) {
-    # Preservar carpeta user/ si ya existen partidas guardadas
     $userBackup = Join-Path $ToolsDir "_azahar_user_backup"
     if (Test-Path (Join-Path $AzaharDir "user")) {
         Move-Item (Join-Path $AzaharDir "user") $userBackup -Force
@@ -123,12 +132,44 @@ if (-not (Test-Path $azaharExe)) {
     Write-Ok "Azahar ya estaba instalado."
 }
 
-# Activar modo portatil de Azahar (carpeta user/ junto a azahar.exe)
 New-Item -ItemType Directory -Force -Path (Join-Path $AzaharDir "user\load\mods") | Out-Null
-Write-Ok "Modo portatil de Azahar activado (tools\azahar\user)."
+New-Item -ItemType Directory -Force -Path (Join-Path $AzaharDir "user\config") | Out-Null
+
+# Preconfigurar Azahar (carpeta roms, idioma espanol, HD 2x, sin mensajes de bienvenida)
+$qtIni = Join-Path $AzaharDir "user\config\qt-config.ini"
+if (-not (Test-Path $qtIni)) {
+    $p = Start-Process -FilePath $azaharExe -WorkingDirectory $AzaharDir -PassThru
+    Start-Sleep -Seconds 3
+    if (-not $p.HasExited) { $p.CloseMainWindow() | Out-Null; Start-Sleep -Seconds 1 }
+    if (-not $p.HasExited) { Stop-Process -Id $p.Id -Force -ErrorAction SilentlyContinue }
+}
+if (Test-Path $qtIni) {
+    $romsSlash = $RomsDir.Replace("\", "/")
+    $lines = Get-Content $qtIni -Encoding UTF8
+    $lines = Set-IniValue $lines "Paths\language\default" "false"
+    $lines = Set-IniValue $lines "Paths\language" "es"
+    $lines = Set-IniValue $lines "firstStart\default" "false"
+    $lines = Set-IniValue $lines "firstStart" "false"
+    $lines = Set-IniValue $lines "confirmClose\default" "false"
+    $lines = Set-IniValue $lines "confirmClose" "false"
+    $lines = Set-IniValue $lines "resolution_factor\default" "false"
+    $lines = Set-IniValue $lines "resolution_factor" "2"
+    if (-not ($lines -match "^Paths\\gamedirs\\3\\path=")) {
+        $lines = Set-IniValue $lines "Paths\gamedirs\size" "3"
+        $lines = Set-IniValue $lines "Paths\gamedirs\3\path" $romsSlash
+        $lines = Set-IniValue $lines "Paths\gamedirs\3\deep_scan\default" "true"
+        $lines = Set-IniValue $lines "Paths\gamedirs\3\deep_scan" "false"
+        $lines = Set-IniValue $lines "Paths\gamedirs\3\expanded\default" "true"
+        $lines = Set-IniValue $lines "Paths\gamedirs\3\expanded" "true"
+    } else {
+        $lines = Set-IniValue $lines "Paths\gamedirs\3\path" $romsSlash
+    }
+    Set-Content -Path $qtIni -Value $lines -Encoding UTF8
+    Write-Ok "Azahar preconfigurado (carpeta roms\, idioma espanol, resolucion 2x HD)."
+}
 
 # 4. Instalar Universal Pokemon Randomizer FVX
-Write-Step "4/6 Instalando Universal Pokemon Randomizer FVX ($UprVersion)..."
+Write-Step "4/7 Instalando Universal Pokemon Randomizer FVX ($UprVersion)..."
 $uprJar = Join-Path $UprDir "UPR-FVX.jar"
 if ($ForceRedownload -and (Test-Path $UprDir)) {
     Remove-Item $UprDir -Recurse -Force
@@ -146,7 +187,7 @@ if (-not (Test-Path $uprJar)) {
 }
 
 # 5. Instalar PKHeX + comprobar .NET Desktop Runtime
-Write-Step "5/6 Instalando PKHeX (Caramelos Raros y exportador a Showdown)..."
+Write-Step "5/7 Instalando PKHeX (Caramelos Raros y exportador a Showdown)..."
 $pkhexExe = Join-Path $PkhexDir "PKHeX.exe"
 if ($ForceRedownload -and (Test-Path $PkhexDir)) {
     Remove-Item $PkhexDir -Recurse -Force
@@ -182,7 +223,6 @@ if (-not (Test-Path $pkhexExe)) {
     Write-Ok "PKHeX ya estaba instalado."
 }
 
-# Comprobar .NET Desktop Runtime (necesario para PKHeX)
 $hasDotNetDesktop = $false
 try {
     $runtimes = & dotnet --list-runtimes 2>$null
@@ -208,23 +248,37 @@ if ($hasDotNetDesktop) {
     }
 }
 
-# 6. Comprobar / Instalar Radmin VPN (para jugar desde casa contra tu amigo en Azahar)
-Write-Step "6/6 Comprobando Radmin VPN (para salas online de Azahar desde casa)..."
+# 6. Comprobar / Instalar Radmin VPN
+Write-Step "6/7 Comprobando Radmin VPN (para combatir desde casa con Azahar)..."
 $radminInstalled = (Test-Path "C:\Program Files (x86)\Radmin VPN\RvRvpnGui.exe") -or (Test-Path "C:\Program Files\Radmin VPN\RvRvpnGui.exe")
 if ($radminInstalled) {
     Write-Ok "Radmin VPN ya esta instalado."
 } elseif ($InstallRadminVPN) {
     if (Get-Command winget -ErrorAction SilentlyContinue) {
-        Write-Host "  Instalando Radmin VPN via winget..."
+        Write-Host "  Instalando Radmin VPN via winget (acepta el aviso de administrador si aparece)..."
         & winget install --id Famatech.RadminVPN --silent --accept-package-agreements --accept-source-agreements
-        Write-Ok "Radmin VPN instalado."
+        $radminInstalled = (Test-Path "C:\Program Files (x86)\Radmin VPN\RvRvpnGui.exe") -or (Test-Path "C:\Program Files\Radmin VPN\RvRvpnGui.exe")
+        if ($radminInstalled) { Write-Ok "Radmin VPN instalado." } else { Write-Warn "Completa el instalador de Radmin VPN desde https://www.radmin-vpn.com/" }
     } else {
         Write-Warn "winget no disponible. Descarga Radmin VPN gratis en: https://www.radmin-vpn.com/"
     }
 } else {
-    Write-Warn "Radmin VPN no esta instalado (opcional si vais a usar salas directas de Azahar)."
+    Write-Warn "Radmin VPN no esta instalado (necesario para salas directas de Azahar desde casa)."
     Write-Host "  Para instalarlo rapido ejecuta: winget install Famatech.RadminVPN"
     Write-Host "  O descargalo de: https://www.radmin-vpn.com/"
+}
+
+# 7. Si ya hay una ROM en roms\ y falta el mod en Azahar, aplicar Randomlocke automatico
+Write-Step "7/7 Comprobando ROM y parche Randomlocke..."
+$hasRom = Get-ChildItem -Path $RomsDir -File -ErrorAction SilentlyContinue | Where-Object { $_.Extension -in ".cci", ".3ds", ".cxi" } | Select-Object -First 1
+$hasMod = (Get-ChildItem -Path (Join-Path $AzaharDir "user\load\mods") -Directory -ErrorAction SilentlyContinue | Measure-Object).Count -gt 0
+if ($hasRom -and (-not $hasMod) -and (-not $SkipAutoRandomize)) {
+    Write-Host "  ROM detectada ($($hasRom.Name)) sin mod instalado. Aplicando preset Randomlocke (seed 20261121)..."
+    & (Join-Path $BaseDir "scripts\randomize-auto.ps1")
+} elseif ($hasMod) {
+    Write-Ok "Parche LayeredFS Randomlocke ya instalado en Azahar."
+} else {
+    Write-Warn "Falta la ROM en roms\. Cuando la pongas, ejecuta: scripts\randomize-auto.ps1"
 }
 
 Write-Host ""
@@ -235,6 +289,8 @@ Write-Host "Resumen de verificacion:"
 Write-Host "  Azahar:     $(if (Test-Path $azaharExe) { 'OK' } else { 'FALTA' })"
 Write-Host "  UPR FVX:    $(if (Test-Path $uprJar) { 'OK' } else { 'FALTA' })"
 Write-Host "  PKHeX:      $(if (Test-Path $pkhexExe) { 'OK' } else { 'FALTA' })"
-Write-Host "  Radmin VPN: $(if ($radminInstalled) { 'OK' } else { 'PENDIENTE (opcional)' })"
+Write-Host "  Radmin VPN: $(if ($radminInstalled) { 'OK' } else { 'PENDIENTE' })"
+Write-Host "  ROM:        $(if ($hasRom) { $hasRom.Name } else { 'FALTA en roms\' })"
+Write-Host "  Mod Random: $(if ((Get-ChildItem -Path (Join-Path $AzaharDir 'user\load\mods') -Directory -ErrorAction SilentlyContinue | Measure-Object).Count -gt 0) { 'INSTALADO' } else { 'PENDIENTE' })"
 Write-Host ""
-Write-Host "Siguiente paso: lee README.md o mete tu ROM desencriptada (.3ds/.cci) en la carpeta roms\"
+Write-Host "Para jugar con un clic: 0-JUGAR-POKEMON-Y.bat" -ForegroundColor Cyan
