@@ -145,6 +145,11 @@ if (-not (Test-Path $qtIni)) {
 }
 if (Test-Path $qtIni) {
     $romsSlash = $RomsDir.Replace("\", "/")
+    # Perfil ligero automatico en equipos con <= 12 GB de RAM (p. ej. portatil de 8 GB + GTX 1050)
+    $totalRamGB = [math]::Round((Get-CimInstance Win32_ComputerSystem).TotalPhysicalMemory / 1GB, 1)
+    $lightProfile = ($totalRamGB -le 12)
+    $resFactor  = if ($lightProfile) { "1" } else { "2" }
+    $frameLimit = if ($lightProfile) { "100" } else { "200" }
     $lines = Get-Content $qtIni -Encoding UTF8
     $lines = Set-IniValue $lines "Paths\language\default" "false"
     $lines = Set-IniValue $lines "Paths\language" "es"
@@ -153,7 +158,7 @@ if (Test-Path $qtIni) {
     $lines = Set-IniValue $lines "confirmClose\default" "false"
     $lines = Set-IniValue $lines "confirmClose" "false"
     $lines = Set-IniValue $lines "resolution_factor\default" "false"
-    $lines = Set-IniValue $lines "resolution_factor" "2"
+    $lines = Set-IniValue $lines "resolution_factor" $resFactor
     $lines = Set-IniValue $lines "async_shader_compilation\default" "false"
     $lines = Set-IniValue $lines "async_shader_compilation" "true"
     $lines = Set-IniValue $lines "use_vsync\default" "false"
@@ -161,7 +166,7 @@ if (Test-Path $qtIni) {
     $lines = Set-IniValue $lines "disable_right_eye_render\default" "false"
     $lines = Set-IniValue $lines "disable_right_eye_render" "true"
     $lines = Set-IniValue $lines "frame_limit\default" "false"
-    $lines = Set-IniValue $lines "frame_limit" "200"
+    $lines = Set-IniValue $lines "frame_limit" $frameLimit
     $lines = Set-IniValue $lines "turbo_limit\default" "false"
     $lines = Set-IniValue $lines "turbo_limit" "400"
     $lines = Set-IniValue $lines "Shortcuts\Main%20Window\Toggle%20Turbo%20Mode\KeySeq\default" "false"
@@ -177,7 +182,7 @@ if (Test-Path $qtIni) {
         $lines = Set-IniValue $lines "Paths\gamedirs\3\path" $romsSlash
     }
     Set-Content -Path $qtIni -Value $lines -Encoding UTF8
-    Write-Ok "Azahar preconfigurado (carpeta roms\, idioma espanol, resolucion 2x HD)."
+    Write-Ok "Azahar preconfigurado (carpeta roms\, idioma espanol, resolucion ${resFactor}x, limite $frameLimit FPS; RAM detectada: $totalRamGB GB)."
 }
 
 # 4. Instalar Universal Pokemon Randomizer FVX

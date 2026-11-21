@@ -1,51 +1,79 @@
-# 🤖 Prompt para pasarle a tu amigo (pegar entero en su Antigravity)
+# Prompt para el agente de tu amigo (pegar entero en Antigravity)
 
-Copia este texto completo y pásaselo a tu amigo para que lo pegue tal cual en su **Antigravity**:
+Copia el bloque de abajo tal cual y pégalo en el agente de tu amigo. Sirve para actualizar su instalación existente y empezar de cero con una semilla nueva.
 
 ---
 
 ```text
-Hola, quiero que me montes y configures AL MILÍMETRO mi portátil para jugar un Pokémon Y Randomlocke / DualLocke de Nintendo 3DS online contra mi amigo Eneko (cada uno desde su casa). No sé mucho de ordenadores, así que haz tú todos los comandos posibles por mí y déjamelo EXACTAMENTE igual que a él: listo para abrir y jugar con un solo clic (`0-JUGAR-POKEMON-Y.bat`), pero con UNA SEMILLA DISTINTA para que mi partida tenga Pokémon aleatorios diferentes a los suyos (con las mismas reglas).
+Eres el agente de mi portátil. Tienes que actualizar mi instalación de Pokémon Y Randomlocke / DualLocke 3DS a la última versión del repositorio y empezar una partida 100% nueva con una semilla de randomización nueva. Haz los pasos en orden, comprueba cada uno antes de pasar al siguiente y, si algo falla, para y cuéntamelo con el error exacto. Todo en PowerShell, sin instalar nada que no se indique aquí.
 
-Todo el entorno, instalador, preset de randomización y guía están en este repositorio de GitHub:
-https://github.com/enekosuke/pokemon-duallocke-3ds
+DATOS DE MI EQUIPO (respétalos)
+- Carpeta del proyecto: C:\Users\Enara\Downloads\Pokemon-DualLocke-3DS
+- Portátil con Intel i7-8550U, SOLO 8 GB de RAM y NVIDIA GTX 1050 (driver 582.78 WHQL, ya actualizado).
+- Ya está instalado: el clon del repo, tools\azahar (Azahar 2126.2 portátil), tools\upr-fvx (UPR FVX 1.6.3 con Java), tools\pkhex, Radmin VPN y la ROM roms\Pokemon Y (USA) (En,Ja,Fr,De,Es,It,Ko).cci.
+- Repositorio: https://github.com/enekosuke/pokemon-duallocke-3ds
+- Reglas de seguridad: NUNCA subas a GitHub la ROM (.cci/.3ds/.7z), ni tools\, ni saves-backup\. No hagas git push. No borres roms\ ni tools\. No mates azahar.exe sin que yo lo sepa.
 
-Ejecuta estos pasos en orden y verifica cada uno sin saltarte nada:
+PASO 0. PREPARAR EL EQUIPO (8 GB de RAM)
+- Si hay algún azahar.exe abierto, pídeme que guarde la partida, y ciérralo antes de seguir. Cierra también navegadores y programas pesados mientras randomizas.
+- Comprueba la RAM: (Get-CimInstance Win32_ComputerSystem).TotalPhysicalMemory/1GB. Debe salir unos 8.
+- Comprueba que existen: roms\*.cci, tools\azahar\azahar.exe, tools\upr-fvx\UPR-FVX.jar, tools\upr-fvx\java\bin\java.exe.
 
-1. DESCARGA DEL ENTORNO:
-   - Clona o descarga el repositorio `https://github.com/enekosuke/pokemon-duallocke-3ds` en `%USERPROFILE%\Downloads\Pokemon-DualLocke-3DS` (si no tengo `git`, descarga el ZIP de `https://github.com/enekosuke/pokemon-duallocke-3ds/archive/refs/heads/main.zip` y extráelo ahí manteniendo la carpeta `Pokemon-DualLocke-3DS`).
+PASO 1. ACTUALIZAR EL CÓDIGO
+- cd C:\Users\Enara\Downloads\Pokemon-DualLocke-3DS
+- git pull --ff-only. Si falla por cambios locales: git fetch origin y después git reset --hard origin/main. Esto NO toca roms\ ni tools\ (están en .gitignore).
+- Comprueba con git log -1 que estás en el último commit y que existen scripts\enhance-romfs.ps1, scripts\rom-engine.ps1 y scripts\randomize-auto.ps1.
+- NO ejecutes setup.ps1 ni 1-Instalar-o-Reparar-Todo.bat (ya está todo instalado y no hace falta).
 
-2. INSTALACIÓN AUTOMÁTICA DE TODO + RADMIN VPN:
-   - Entra en `%USERPROFILE%\Downloads\Pokemon-DualLocke-3DS` y ejecuta:
-     `powershell -NoProfile -ExecutionPolicy Bypass -File .\setup.ps1 -InstallRadminVPN`
-   - Esto instala y preconfigura en modo portátil:
-     * Azahar 2126.2 (en español, resolución 2x HD, carpeta `roms\` añadida)
-     * Universal Pokémon Randomizer FVX v1.6.3 (con Java incluido)
-     * PKHeX + .NET Windows Desktop Runtime (para Caramelos Raros y exportar equipo)
-     * Radmin VPN (para conectar mi PC con el de Eneko desde casa)
-   - Si Radmin VPN no quedó instalado porque saltó o falló el aviso de administrador (UAC), avísame claramente o ejecuta `winget install Famatech.RadminVPN` y dime qué botón pulsar.
+PASO 2. CONFIGURACIÓN LIGERA DE AZAHAR (debe quedar EXACTA)
+Abre tools\azahar\user\config\qt-config.ini y comprueba estas claves. Para cada una, la línea "clave\default" debe valer false y la línea "clave" el valor indicado. Si alguna no coincide, corrígela (Azahar tiene que estar cerrado):
+- graphics_api = 2 (Vulkan)
+- resolution_factor = 1   (NO 2)
+- frame_limit = 100
+- async_shader_compilation = true
+- disable_right_eye_render = true
+- Paths\language = es
+Si ya estaban bien, no escribas nada. Muéstrame al final las 6 líneas finales.
 
-3. REVISIÓN OBLIGATORIA DEL DRIVER DE MI GRÁFICA (GTX 1050):
-   - Comprueba la fecha y versión real del driver de mi NVIDIA GeForce GTX 1050 con:
-     `Get-CimInstance Win32_VideoController | Select-Object Name, DriverVersion, DriverDate`
-   - Mi portátil tenía un driver de mayo de 2017 (`22.21.13.8205`). Si sigue siendo anterior a 2023, AVÍSAME EN MAYÚSCULAS al principio de tu respuesta y dame el enlace oficial (`https://www.nvidia.com/es-es/drivers/`) indicándome paso a paso qué elegir (`GeForce` -> `GeForce GTX 10 Series (Notebooks)` -> `GeForce GTX 1050` -> `Windows 10/11 64-bit` -> `Game Ready Driver`), darle a `Instalación rápida` y reiniciar el portátil.
+PASO 3. COPIA DE SEGURIDAD DEL SAVE Y BORRADO LIMPIO
+- Ruta del save: tools\azahar\user\sdmc\Nintendo 3DS\00000000000000000000000000000000\00000000000000000000000000000000\title\00040000\00055e00\data
+- Si existe la subcarpeta data\00000001\main, copia main a saves-backup\save-anterior-AAAAMMDD-HHMMSS\main (crea la carpeta). Puedes usar 6-Backup-Save.bat.
+- Después borra la carpeta data ENTERA (incluido 00000001.metadata): Remove-Item "<ruta>\data" -Recurse -Force. Si solo se borra main, el juego dice "The saved game data is corrupted".
+- Comprueba que la carpeta data ya no existe.
 
-4. FIREWALL PARA MULTIJUGADOR (AZAHAR + RADMIN VPN):
-   - Comprueba si hay reglas de Firewall de Windows bloqueando `tools\azahar\azahar.exe` y añade reglas de entrada/salida si tienes permisos (o dime en 2 pasos cómo permitir Azahar si salta el aviso del Firewall de Windows al abrirlo).
+PASO 4. GENERAR EL SISTEMA COMPLETO CON UNA SEMILLA NUEVA
+- Semillas PROHIBIDAS (son de Eneko): 20261121 y 65344194. Tampoco repitas la semilla que ya tuviera yo antes si la conoces.
+- Ejecuta, con Azahar cerrado:
+  powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\randomize-auto.ps1
+  Sin parámetros genera una semilla aleatoria que no coincide con las prohibidas. Si prefieres elegirla tú, usa -Seed <número de 8 cifras distinto de las prohibidas>.
+- Mira la salida: tiene que decir "RAM detectada: ... GB -> Java -Xmx3072M". Si dice -Xmx4608M, para y avísame (no lo ejecutes así con 8 GB). Tarda más o menos medio minuto.
+- Apunta la semilla que muestra ("Semilla: NNNNNNNN").
+- El script ya aplica solo, en este orden: UPR FVX con el preset presets\pokemon-y-randomlocke.rnqs, scripts\enhance-romfs.ps1 (IA experta, Caramelo Raro a 10 pokedólares y regulación de 3ªs evoluciones antes del 4º gimnasio) y scripts\rom-engine.ps1 -Apply (muerte permanente, tope de nivel y caramelos en tiendas). No hace falta ejecutarlos a mano.
+- Dependencias: ninguna extra. Todo es PowerShell con .NET incluido en Windows y los programas de tools\. No instales Python ni nada más.
 
-5. ROM DE POKÉMON Y + GENERACIÓN DE MI SEMILLA DISTINTA (MISMO PRESET QUE ENEKO):
-   - Busca si ya tengo la ROM de Pokémon Y (`.cci`, `.3ds`, `.7z` o `.zip`) en `%USERPROFILE%\Downloads` o en `roms\`. Si está comprimida (`.7z` o `.zip`), descomprímela tú automáticamente en `roms\` (limpiando archivos basura si los hubiera y dejando el `.cci` / `.3ds` limpio dentro de `roms\`).
-   - En cuanto la ROM esté en `roms\`, ejecuta:
-     `powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\randomize-auto.ps1`
-   - IMPORTANTE: NO uses la semilla `20261121` (esa es la de Eneko). El script sin parámetros genera automáticamente una semilla nueva aleatoria distinta usando exactamente el mismo archivo de reglas (`presets\pokemon-y-randomlocke.rnqs`: iniciales, salvajes, estáticos, habilidades sin Superguarda, ataques, MTs, objetos, gimnasios y entrenadores random + evoluciones por intercambio activadas + Caramelos Raros baratos) y lo instala automáticamente en `tools\azahar\user\load\mods\0004000000055E00\`.
-   - Si todavía no tengo la ROM descargada en el PC, dímelo claro: necesito el archivo desencriptado `Pokemon Y (USA) (En,Ja,Fr,De,Es,It,Ko).cci` (o `.3ds`) metido en la carpeta `roms\`, y que en cuanto lo ponga o lo descargue te avise para que tú termines este paso por mí.
+PASO 5. VERIFICAR EN DISCO (muéstrame los resultados)
+Dentro de tools\azahar\user\load\mods\0004000000055E00\ comprueba:
+- exefs\code.bin existe (unos 5 MB) y exefs\code.ips existe y pesa EXACTAMENTE 604 bytes.
+- romfs\a\0\1\2 existe y pesa entre 850000 y 900000 bytes (si pesa cerca de 966000 o más, el parche de evoluciones falló: avísame, no juegues).
+- romfs\a\0\3\8, romfs\a\2\2\0, romfs\a\2\1\5, romfs\a\2\1\8 existen.
+- presets\pro-rules.json existe con permadeath true, level_cap true y mart_candies true.
+- En la salida del paso 4 aparecen estas confirmaciones: "IA Experta Maxima (0x07) aplicada a N entrenadores/gimnasios" (N cercano a 784), "Precio del Caramelo Raro ajustado a 10 pokedolares" y "MOTOR NATIVO ARM32 PRO APLICADO".
+- git status no debe mostrar ROMs ni tools\ (están ignorados).
 
-6. ACCESO DIRECTO DE 1 CLIC Y COMPROBACIÓN FINAL:
-   - Crea también un acceso directo en mi Escritorio apuntando a `0-JUGAR-POKEMON-Y.bat` llamado `Jugar Pokemon Y Randomlocke` para que solo tenga que hacer doble clic ahí.
-   - Verifica en disco que existen: `tools\azahar\azahar.exe`, `tools\azahar\user\config\qt-config.ini`, `tools\upr-fvx\UPR-FVX.jar`, `tools\pkhex\PKHeX.exe`, Radmin VPN, la ROM en `roms\` y el mod en `tools\azahar\user\load\mods\0004000000055E00\romfs`.
-   - Al final, explícame como para alguien que no sabe de informática:
-     a) Cómo abrir el juego con 1 clic (`Jugar Pokemon Y Randomlocke` en el Escritorio) y configurar mi teclado/mando la primera vez en Azahar.
-     b) Cómo abrir Radmin VPN, encenderlo (`Encender`) y hacer `Red -> Unirse a una red` con el nombre y contraseña que me diga Eneko.
-     c) Cómo conectarme a su sala en Azahar (`Multijugador -> Conexión directa a una sala`, metiendo su IP `26.x.x.x` y puerto `24872`) y retarle por el **PSS** dentro del juego (sin pulsar el botón azul de Internet).
-     d) Cómo exportar mi equipo con `4-Abrir-PKHeX.bat` a Pokémon Showdown (`[Gen 6] Custom Game`) por si alguna vez preferimos combatir rápido en navegador.
+PASO 6. ACCESOS DIRECTOS EN EL ESCRITORIO
+Crea o actualiza en el Escritorio real (usa [Environment]::GetFolderPath('Desktop'), puede estar en OneDrive) con WScript.Shell:
+- "Jugar Pokemon Y Randomlocke.lnk" -> C:\Users\Enara\Downloads\Pokemon-DualLocke-3DS\0-JUGAR-POKEMON-Y.bat (WorkingDirectory = la carpeta del proyecto)
+- "Jugar Online Pokemon Y.lnk" -> C:\Users\Enara\Downloads\Pokemon-DualLocke-3DS\00-JUGAR-ONLINE-CON-AMIGO.bat (WorkingDirectory = la carpeta del proyecto)
+No hay lanzadores nuevos que crear. Comprueba que los dos .lnk existen y apuntan bien.
+
+PASO 7. EXPLICACIÓN FINAL PARA MÍ (lenguaje sencillo, sin tecnicismos)
+Cuando termines, escríbeme esto en castellano claro:
+1. Qué semilla me ha tocado y que es distinta de la de Eneko (mismas reglas, Pokémon distintos).
+2. Cómo jugar: doble clic en "Jugar Pokemon Y Randomlocke" del Escritorio. Es partida nueva: la primera vez sale una pantalla para elegir idioma, elige Spanish, confirma con "Begin game" y sigue la intro. La tecla Tab activa y desactiva el turbo.
+3. Reglas del sistema: a partir de la 1ª medalla, los Pokémon debilitados se pierden para siempre (en combates PVP no). Hay un tope de nivel según las medallas que llevas (12, 25, 32, 34, 37, 42, 48, 59 y 68). El Caramelo Raro se compra en las tiendas por 10 pokédolares. Las evoluciones finales fuertes y los legendarios no aparecen hasta pasar el 4º gimnasio.
+4. Cómo conectarme con Eneko: abrir Radmin VPN, encenderlo y unirme a la red que me diga él. Después doble clic en "Jugar Online Pokemon Y" y elegir la opción 2 (Unirse a sala), poner la IP 26.x.x.x de Eneko y mi apodo. En el juego usar el combate inalámbrico local del PSS, SIN pulsar el botón azul de Internet, y con el turbo desactivado durante el combate.
+5. Plan B si falla la conexión: 4-Abrir-PKHeX.bat, abrir mi partida y exportar el equipo a Pokémon Showdown en [Gen 6] Custom Game.
+6. Que mi partida anterior (si existía) quedó guardada en saves-backup\ y que no debo borrar esa carpeta.
+
+Si algo no se puede hacer (por ejemplo un permiso de administrador), dímelo claro y dame el paso exacto para hacerlo yo.
 ```

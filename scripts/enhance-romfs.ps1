@@ -80,27 +80,92 @@ public static class PokemonYRomfsEnhancer
         return dst;
     }
 
-    // Valid LZ11 encoder using fast literal blocks (100% compatible with Nintendo SDK LZ11 decoder)
+    // Real LZ11 encoder (hash chains + greedy match, 2/3/4-byte token forms).
+    // Output size stays close to the original game data, so the patched GARC
+    // entries do not grow (literal-only output doubled them and could overflow
+    // fixed-size buffers in the game's zone loader).
     public static byte[] Lz11CompressSafe(byte[] raw)
     {
         int n = raw.Length;
-        int blocks = (n + 7) / 8;
-        using (var ms = new MemoryStream(4 + n + blocks))
+        var outp = new MemoryStream(n);
+        outp.WriteByte(0x11);
+        outp.WriteByte((byte)(n & 0xFF));
+        outp.WriteByte((byte)((n >> 8) & 0xFF));
+        outp.WriteByte((byte)((n >> 16) & 0xFF));
+
+        const int WIN = 0x1000, MAXLEN = 0x10110, MAXCHAIN = 256;
+        var head = new int[1 << 16];
+        for (int k = 0; k < head.Length; k++) head[k] = -1;
+        var prev = new int[n > 0 ? n : 1];
+
+        Func<int, int> hash = p => ((raw[p] << 8) ^ (raw[p + 1] << 4) ^ raw[p + 2]) & 0xFFFF;
+        Action<int> insert = p =>
         {
-            ms.WriteByte(0x11);
-            ms.WriteByte((byte)(n & 0xFF));
-            ms.WriteByte((byte)((n >> 8) & 0xFF));
-            ms.WriteByte((byte)((n >> 16) & 0xFF));
-            int i = 0;
-            while (i < n)
+            if (p + 2 < n) { int h = hash(p); prev[p] = head[h]; head[h] = p; }
+        };
+
+        int pos = 0;
+        var block = new MemoryStream();
+        while (pos < n)
+        {
+            int flags = 0;
+            block.SetLength(0);
+            for (int bit = 7; bit >= 0 && pos < n; bit--)
             {
-                ms.WriteByte(0x00); // 8 literal bytes
-                int take = Math.Min(8, n - i);
-                ms.Write(raw, i, take);
-                i += take;
+                int bestLen = 0, bestDisp = 0;
+                if (pos + 2 < n)
+                {
+                    int cand = head[hash(pos)];
+                    int chain = 0;
+                    int maxHere = Math.Min(MAXLEN, n - pos);
+                    while (cand >= 0 && pos - cand <= WIN && chain++ < MAXCHAIN)
+                    {
+                        int l = 0;
+                        while (l < maxHere && raw[cand + l] == raw[pos + l]) l++;
+                        if (l > bestLen) { bestLen = l; bestDisp = pos - cand; if (l == maxHere) break; }
+                        cand = prev[cand];
+                    }
+                }
+                if (bestLen >= 3)
+                {
+                    flags |= 1 << bit;
+                    int d1 = bestDisp - 1;
+                    if (bestLen <= 0x10)
+                    {
+                        block.WriteByte((byte)(((bestLen - 1) << 4) | (d1 >> 8)));
+                        block.WriteByte((byte)(d1 & 0xFF));
+                    }
+                    else if (bestLen <= 0x110)
+                    {
+                        int l = bestLen - 0x11;
+                        block.WriteByte((byte)(l >> 4));
+                        block.WriteByte((byte)(((l & 0xF) << 4) | (d1 >> 8)));
+                        block.WriteByte((byte)(d1 & 0xFF));
+                    }
+                    else
+                    {
+                        int l = bestLen - 0x111;
+                        block.WriteByte((byte)(0x10 | (l >> 12)));
+                        block.WriteByte((byte)((l >> 4) & 0xFF));
+                        block.WriteByte((byte)(((l & 0xF) << 4) | (d1 >> 8)));
+                        block.WriteByte((byte)(d1 & 0xFF));
+                    }
+                    for (int k = 0; k < bestLen; k++) insert(pos + k);
+                    pos += bestLen;
+                }
+                else
+                {
+                    block.WriteByte(raw[pos]);
+                    insert(pos);
+                    pos++;
+                }
             }
-            return ms.ToArray();
+            outp.WriteByte((byte)flags);
+            block.WriteTo(outp);
         }
+        // Pad to 4 bytes like Nintendo's encoder
+        while ((outp.Length & 3) != 0) outp.WriteByte(0);
+        return outp.ToArray();
     }
 
     public static List<byte[]> ReadGarcSimple(string path, out byte[] headerPrefix, out uint[] fatbBits)
@@ -400,9 +465,20 @@ public static class PokemonYRomfsEnhancer
                     replacedSlots++;
                 }
             }
-            if (changed)
+            // Recomprimir siempre las zonas reguladas (aunque no cambie ningun slot):
+            // repara GARCs generados antes con el compresor "solo literales" que inflaba las entradas.
+            if (changed || wasLz)
             {
-                encEntries[mapIdx] = wasLz ? Lz11CompressSafe(dec) : dec;
+                byte[] packed = wasLz ? Lz11CompressSafe(dec) : dec;
+                if (wasLz)
+                {
+                    // Round-trip check: never write an entry the game could not decode identically
+                    byte[] back = Lz11Decompress(packed);
+                    if (back.Length != dec.Length) throw new InvalidOperationException("LZ11 round-trip size mismatch en zona " + mapIdx);
+                    for (int q = 0; q < dec.Length; q++)
+                        if (back[q] != dec[q]) throw new InvalidOperationException("LZ11 round-trip mismatch en zona " + mapIdx + " offset " + q);
+                }
+                encEntries[mapIdx] = packed;
             }
         }
 

@@ -12,7 +12,8 @@ param(
 $ErrorActionPreference = "Stop"
 if (-not $Seed -or $Seed -eq "random") {
     $Seed = [string](Get-Random -Minimum 1000000 -Maximum 99999999)
-    if ($Seed -eq "20261121") { $Seed = "20261122" }
+    # Semillas ya usadas por Eneko: nunca repetirlas
+    while (@("20261121", "65344194") -contains $Seed) { $Seed = [string](Get-Random -Minimum 1000000 -Maximum 99999999) }
 }
 $BaseDir = Split-Path -Parent (Split-Path -Parent $MyInvocation.MyCommand.Path)
 $RomsDir = Join-Path $BaseDir "roms"
@@ -73,7 +74,14 @@ try {
 
     Write-Host ">>> Randomizando ROM en formato LayeredFS (tarda ~20 segundos)..." -ForegroundColor Yellow
     Push-Location $UprDir
-    & $JavaExe -Xmx4608M -jar $tmpJar cli -i $romFile.FullName -o $outDir -s $PresetPath -z $Seed -d
+    # Limite de heap segun RAM fisica: 8 GB -> 3072M (seguro), >12 GB -> 4608M
+    $ramGB = [math]::Round((Get-CimInstance Win32_ComputerSystem).TotalPhysicalMemory / 1GB, 1)
+    $heap = if ($ramGB -le 12) { "-Xmx3072M" } else { "-Xmx4608M" }
+    Write-Host "  RAM detectada: $ramGB GB -> Java $heap" -ForegroundColor DarkGray
+    if ($ramGB -le 12 -and (Get-Process azahar -ErrorAction SilentlyContinue)) {
+        throw "Cierra Azahar antes de randomizar (equipo con poca RAM)."
+    }
+    & $JavaExe $heap -jar $tmpJar cli -i $romFile.FullName -o $outDir -s $PresetPath -z $Seed -d
     $exitCode = $LASTEXITCODE
     Pop-Location
     if ($exitCode -ne 0) {

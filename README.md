@@ -3,6 +3,7 @@
 Entorno completo, portátil y 100% autocontenido en una sola carpeta (`C:\Users\Usuario\Downloads\Pokemon-DualLocke-3DS`) para jugar **Pokémon Y (Nintendo 3DS, USA v1.0, Title ID `0004000000055E00`) Randomlocke / DualLocke PRO** en PC, con motor nativo ARM32 (Muerte Permanente + Hard Level Cap + Caramelos Raros infinitos en tiendas por 10₽), parches avanzados de RomFS (IA Experta + regulación de 3ªs evoluciones hasta el 4º Gimnasio) y multijugador online en 1 clic mediante Azahar + Radmin VPN.
 
 - **Repositorio GitHub (público, sin ROMs ni binarios pesados):** `https://github.com/enekosuke/pokemon-duallocke-3ds`
+- **Semillas ya usadas por Eneko (nunca repetir):** `20261121`, `65344194` (el script las excluye al generar una aleatoria).
 - **Semilla activa actual de Eneko:** `65344194` (semilla anterior respaldada en `saves-backup\save-seed-20261121-20261121-042353\main`).
 - **Accesos directos en el Escritorio de Eneko:**
   - `Jugar Pokemon Y Randomlocke.lnk` → `0-JUGAR-POKEMON-Y.bat`
@@ -181,7 +182,8 @@ Todas mantienen alineación de pila de 8 bytes (número par de registros en `pus
   - Consulta especies de 3ª evolución en `a/2/1/5` (89 especies) y BST en `a/2/1/8` (Personal Data).
   - Descomprime vía LZ11 únicamente las **25 zonas previas al 4º Gimnasio**: `45, 157, 172, 259..270, 285, 286, 302..308, 334, 357`.
   - Devoluciona especies de 3ª etapa a su preevolución (2ª etapa) y reemplaza legendarios con BST ≥ 580 por Pokémon válidos de 1ª/2ª etapa, sin alterar los slots de Supercaña (`76..78`) ni las zonas posteriores al 4º Gimnasio.
-  - Recomprime con compresor LZ11 válido y reconstruye la cabecera GARC (`FATO`/`FATB`/`FIMB`).
+  - Recomprime con un compresor LZ11 real (cadenas hash, formas de 2/3/4 bytes) para que cada entrada conserve un tamaño casi idéntico al original (el `largest` del GARC queda igual que en la ROM) y verifica el round-trip antes de escribir. **No usar compresión "solo literales"**: duplicaba el tamaño de las zonas y provocaba cuelgues al entrar en el Bosque Novarte. Reconstruye la cabecera GARC (`FATO`/`FATB`/`FIMB`).
+  - Re-ejecutar `scripts\enhance-romfs.ps1 -SkipAI -SkipCandyPrice` recomprime y repara un `a/0/1/2` generado con la versión antigua.
 
 ### 4.5. Investigación ya iniciada para futura mejora opcional: "Saltar intro hasta elección de inicial"
 Si en el futuro se quiere implementar un parche nativo que tras terminar la creación de personaje (`DllIntro.cro`) aparezca directamente vestido en Pueblo Acuarela delante de la mesa de iniciales:
@@ -191,11 +193,12 @@ Si en el futuro se quiere implementar un parche nativo que tras terminar la crea
 - **Estrategia recomendada sin softlocks:** obtener un `main` guardado justo 1 paso antes de la mesa de Pueblo Acuarela (Pajamas OFF, Mamá y Ruta 1 completados), hacer diff de `Situation` (`0x1400`), `EventWork` (`0x14A00`), `EventFlag` (`0x14C00`) y `Fashion`, e inyectar esos valores exactos en `0x3B7FFC` usando otra cueva de CRO online muerto (`DllPGL`/`DllLiveCup`/`DllGts`).
 
 ### 4.6. Workarounds, trampas conocidas y reglas para agentes
-1. **Bug upstream de UPR FVX 1.6.3 CLI (`EXTRA_MEMORY_NOT_AVAILABLE`):** `CliRandomizer` nunca llama a `romOpener.setExtraMemoryAvailable(true)`. `scripts/randomize-auto.ps1` lo resuelve automáticamente creando un JAR temporal `_upr_cli_temp.jar`, parcheando el byte `4640` de `com/uprfvx/romio/romio/RomOpener.class` (`0x9A ifne` → `0x99 ifeq`), ejecutando con `-Xmx4608M` (en portátiles de 8 GB RAM bajar a `-Xmx3072M` si hiciera falta) y borrando el temporal.
+1. **Bug upstream de UPR FVX 1.6.3 CLI (`EXTRA_MEMORY_NOT_AVAILABLE`):** `CliRandomizer` nunca llama a `romOpener.setExtraMemoryAvailable(true)`. `scripts/randomize-auto.ps1` lo resuelve automáticamente creando un JAR temporal `_upr_cli_temp.jar`, parcheando el byte `4640` de `com/uprfvx/romio/romio/RomOpener.class` (`0x9A ifne` → `0x99 ifeq`), ejecutando con un heap elegido según la RAM física (**≤ 12 GB → `-Xmx3072M`**, más RAM → `-Xmx4608M`; en equipos con poca RAM exige tener Azahar cerrado) y borrando el temporal.
 2. **Invocación en PowerShell:** ejecutar los scripts con `& ".\scripts\..."` o `powershell -NoProfile -ExecutionPolicy Bypass -File ...`. Todos los scripts de producción son PowerShell + .NET/C# puro (**cero dependencia de Python** en el PC del usuario o de su amigo).
 3. **Reseteo limpio de partida en Azahar:** borrar SIEMPRE la carpeta completa `title\00040000\00055e00\data` (incluyendo `00000001.metadata`), nunca solo `main`.
 4. **Reglas de entorno y seguridad:**
    - **Nunca subir archivos de ROM** (`.cci`, `.3ds`, `.cxi`, `.7z`, `.zip`) ni `tools/` a GitHub (ya están en `.gitignore`).
    - **Nunca matar `azahar.exe`** mientras el usuario esté jugando sin avisarle primero para guardar partida.
    - **No modificar otros repositorios/carpetas** fuera de `C:\Users\Usuario\Downloads\Pokemon-DualLocke-3DS`.
+   - `setup.ps1` detecta equipos con ≤ 12 GB de RAM y aplica el perfil ligero (`resolution_factor=1`, `frame_limit=100`) en lugar del de 2x/200 FPS.
    - **Perfil del amigo (portátil ligero):** carpeta `C:\Users\Enara\Downloads\Pokemon-DualLocke-3DS`, Intel i7-8550U, 8 GB RAM, NVIDIA GTX 1050 (driver actualizado `582.78 WHQL`), configuración ligera de Azahar (`Vulkan`, `resolution_factor=1`, `frame_limit=100`, `async_shader_compilation=true`, `disable_right_eye_render=true`) y **siempre una semilla distinta** a las de Eneko (`20261121` / `65344194`).
