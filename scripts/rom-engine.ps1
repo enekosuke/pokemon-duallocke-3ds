@@ -1,7 +1,7 @@
 ﻿# ==============================================================================
 #  Pokemon Y (USA v1.0, TitleID 0004000000055E00) - MOTOR NATIVO ARM32 PRO
 #  Gestiona 3 parches nativos 100% configurables sobre code.bin / exefs/code.ips:
-#    1. Muerte Permanente (NUZL @ 0x0053bedc, tras N medallas, PVP inmune)
+#    1. Muerte Permanente (NUZL @ 0x0053bedc, tras N medallas, PVP inmune, devuelve el objeto equipado)
 #    2. Hard Level Cap    (LCAP @ 0x003517d4 / 0x003502e8 / 0x0034f538)
 #       Bloquea Caramelos Raros y EXP en combate al nivel del gimnasio actual!
 #    3. Caramelos Raros Infinitos en Tiendas (Shops 1..8 @ 0x0053c8a2..0x0053c9b2)
@@ -36,16 +36,20 @@ $NuzlHookOff   = 0x003C7B48 - $CodeBase
 $NuzlCaveOff   = 0x0053BEDC - $CodeBase
 $NuzlHookBytes = HexToBytes "e6d005ea"
 $NuzlOrigBytes = HexToBytes "4cd08de2"
+# Al borrar un Pokemon muerto, su objeto equipado vuelve a la mochila:
+#   ldr r0,[pp,#0xC]; bl 0x152F54 (GetItem) ; si item!=0: MyItem=[GameData]+0x2D4; bl 0x4348C8 (AddItem item,1)
+#   (misma funcion que usa la tienda para regalar la Honor Ball). Despues se borra con 0x39E1C4 como antes.
+# Rellenado a 268 bytes para que el registro IPS conserve el tamano (cueva 0x53BEDC..0x53BFF4).
 $NuzlCodeBytes = HexToBytes (
-    "ff412de918804fe20400d8e5000050e30000541300005b133800000a180094e5" +
-    "000050e33500000a0000d0e5010050e33200008a071088e20010d1e7000051e3" +
-    "2e00000a00009be5000050e32b00000a030a80e2410e80e209cdfdeb0510d8e5" +
-    "010050e12500003a14409be5000054e32200000a1850d4e5000055e31f00000a" +
-    "060055e31d00008a0400a0e10110a0e30020a0e33a97fdeb000050e30070a013" +
-    "0300001a0600d8e5000050e31300001a0170a0e3016045e2070056e10f0000ba" +
-    "060194e7000050e30a00000a0210a0e3a695fdeb000050e30600001a060194e7" +
-    "c996fdeb000050e30200000a0400a0e10610a0e17888f9eb016046e2edffffea" +
-    "ff41bde84cd08de2d52efaea"
+    "ff412de918804fe20400d8e5000050e33400000a180094e50000d0e5010050e3" +
+    "3000008a071088e20010d1e7000051e32c00000a00009be5030a80e2410e80e2" +
+    "0fcdfdeb0510d8e5010050e12500003a14409be51850d4e50400a0e10110a0e3" +
+    "0020a0e34697fdeb000050e30170a0030070a0130600d8e5070010e11900001a" +
+    "016045e2070056e1160000ba065194e70500a0e10210a0e3b495fdeb000050e3" +
+    "0e00001a0500a0e1d796fdeb000050e30a00000a0c0095e5eb5bf0eb0010b0e1" +
+    "0300000a00009be5b50f80e20120a0e342e2fbeb0400a0e10610a0e17e88f9eb" +
+    "016046e2e6ffffeaff41bde84cd08de2db2efaea000000000000000000000000" +
+    "000000000000000000000000"
 )
 
 # --- MOD 2: HARD LEVEL CAP (LCAP) ---
@@ -165,7 +169,12 @@ function Set-BattleCroPatch([bool]$enable, [string]$modDir) {
     [Array]::Copy($BattleHookNew,   0, $cro, $BattleHookOff, $BattleHookNew.Length)
     [Array]::Copy($BattleCaveBytes, 0, $cro, $BattleCaveOff, $BattleCaveBytes.Length)
     New-Item -ItemType Directory -Force -Path $romfsDir | Out-Null
-    [System.IO.File]::WriteAllBytes($target, $cro)
+    $same = $false
+    if (Test-Path $target) {
+        $cur = [System.IO.File]::ReadAllBytes($target)
+        $same = ($cur.Length -eq $cro.Length) -and ([System.Linq.Enumerable]::SequenceEqual($cur, $cro))
+    }
+    if (-not $same) { [System.IO.File]::WriteAllBytes($target, $cro) }   # no reescribir si ya esta igual (Azahar puede estar leyendolo)
     return "aplicado (sin EXP en combate al llegar al tope)"
 }
 

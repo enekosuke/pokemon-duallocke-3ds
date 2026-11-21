@@ -96,6 +96,7 @@ Todo el pipeline se aplica automáticamente al ejecutar `scripts/randomize-auto.
 5. **Muerte Permanente nativa ARM32 (`scripts/rom-engine.ps1`):**
    - A partir de `min_badges` (por defecto `1`, es decir, tras ganar la 1ª Medalla), cualquier Pokémon debilitado en combate salvaje o entrenador es eliminado definitivamente del equipo al salir del combate.
    - Los combates **PVP / Link / PSS** (`battleType >= 2`) son **siempre inmunes**.
+   - El **objeto equipado** del Pokémon eliminado vuelve a la mochila (1 unidad, misma función `AddItem` 0x4348C8 que usa la tienda). Si la bolsa ya tiene 999 de ese objeto, se pierde.
    - Protección anti-blackout crash (`on_wipe_mode = 0`): si caen los 6 Pokémon, conserva el slot 0 para evitar cuelgue al teletransportarse al Centro Pokémon.
 6. **Regulación de 3ªs evoluciones hasta el 4º Gimnasio (`scripts/enhance-romfs.ps1` → `romfs/a/0/1/2`):**
    - Lee el árbol evolutivo real de `a/2/1/5` (89 especies de 3ª etapa) y los BST de `a/2/1/8`.
