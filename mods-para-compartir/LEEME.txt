@@ -1,0 +1,3 @@
+Guarda aqui la carpeta del mod LayeredFS que genera el Randomizer FVX.
+Asi podras comprimirla en .zip (ocupa pocos MB) y pasarsela a tu amigo por Discord
+para que ambos jugueis EXACTAMENTE la misma partida randomizada.

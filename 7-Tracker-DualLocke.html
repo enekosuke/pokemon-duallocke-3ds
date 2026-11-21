@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Pokémon DualLocke 3DS — Tracker</title>
+<style>
+  :root {
+    --bg: #0f1117;
+    --card: #171a23;
+    --card-2: #1f2431;
+    --border: #2a3040;
+    --text: #eef1f7;
+    --muted: #9aa3b5;
+    --accent: #ef4444;
+    --blue: #3b82f6;
+    --green: #22c55e;
+    --amber: #f59e0b;
+    --purple: #a855f7;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+    background: var(--bg); color: var(--text); line-height: 1.45;
+  }
+  .wrap { max-width: 1120px; margin: 0 auto; padding: 24px 18px 60px; }
+  header {
+    display: flex; flex-wrap: wrap; gap: 16px; align-items: center; justify-content: space-between;
+    padding-bottom: 18px; border-bottom: 1px solid var(--border); margin-bottom: 22px;
+  }
+  h1 { margin: 0; font-size: 1.5rem; letter-spacing: -0.02em; }
+  .sub { color: var(--muted); font-size: 0.9rem; margin-top: 2px; }
+  .toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  select, input, button {
+    background: var(--card-2); color: var(--text); border: 1px solid var(--border);
+    border-radius: 8px; padding: 8px 12px; font-size: 0.9rem;
+  }
+  button { cursor: pointer; font-weight: 600; transition: 0.15s; }
+  button:hover { border-color: var(--blue); }
+  .btn-primary { background: var(--blue); border-color: var(--blue); color: #fff; }
+  .btn-danger { background: rgba(239,68,68,.15); border-color: rgba(239,68,68,.4); color: #fca5a5; }
+  .grid { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); margin-bottom: 20px; }
+  .card {
+    background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 16px 18px;
+  }
+  .card h2 { margin: 0 0 12px; font-size: 1.05rem; display: flex; align-items: center; justify-content: space-between; }
+  .versus-box { display: grid; grid-template-columns: 1fr auto 1fr; gap: 12px; align-items: center; text-align: center; }
+  .score { font-size: 2.2rem; font-weight: 800; margin: 6px 0; }
+  .p1 .score { color: #60a5fa; }
+  .p2 .score { color: #f87171; }
+  .score-btns { display: flex; gap: 6px; justify-content: center; }
+  .score-btns button { padding: 4px 12px; }
+  .stats-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; text-align: center; }
+  .stat { background: var(--card-2); border-radius: 10px; padding: 10px; }
+  .stat label { display: block; font-size: 0.78rem; color: var(--muted); }
+  .stat .val { font-size: 1.5rem; font-weight: 700; margin: 4px 0; }
+  .caps-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 8px; }
+  .cap-item {
+    display: flex; align-items: center; justify-content: space-between; gap: 8px;
+    background: var(--card-2); border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px;
+    cursor: pointer; font-size: 0.86rem;
+  }
+  .cap-item.done { opacity: 0.55; text-decoration: line-through; border-color: var(--green); }
+  .badge {
+    background: rgba(59,130,246,.2); color: #93c5fd; padding: 2px 7px; border-radius: 99px;
+    font-size: 0.78rem; font-weight: 700; white-space: nowrap;
+  }
+  table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+  th, td { padding: 9px 8px; border-bottom: 1px solid var(--border); text-align: left; font-size: 0.9rem; }
+  th { color: var(--muted); font-weight: 600; font-size: 0.82rem; }
+  .form-row { display: grid; grid-template-columns: 1.2fr 1.2fr 1fr 1fr auto; gap: 8px; margin-bottom: 10px; }
+  @media (max-width: 720px) { .form-row { grid-template-columns: 1fr 1fr; } }
+  .pill { padding: 3px 8px; border-radius: 99px; font-size: 0.78rem; font-weight: 600; }
+  .st-equipo { background: rgba(34,197,94,.18); color: #86efac; }
+  .st-pc { background: rgba(59,130,246,.18); color: #93c5fd; }
+  .st-muerto { background: rgba(239,68,68,.2); color: #fca5a5; }
+  .st-fallido { background: rgba(154,163,181,.18); color: #cbd5e1; }
+  .small-btn { padding: 4px 8px; font-size: 0.78rem; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>Pokémon DualLocke 3DS — Tracker</h1>
+      <div class="sub">Guarda automáticamente en tu navegador · Compatible con Gen 6 y Gen 7</div>
+    </div>
+    <div class="toolbar">
+      <select id="gameSelect" title="Juego de 3DS">
+        <option value="xy">Pokémon X / Y</option>
+        <option value="oras">Pokémon Rubí Omega / Zafiro Alfa</option>
+        <option value="sm">Pokémon Sol / Luna</option>
+        <option value="usum">Pokémon Ultrasol / Ultraluna</option>
+      </select>
+      <button onclick="exportData()">Exportar JSON</button>
+      <button onclick="document.getElementById('importFile').click()">Importar JSON</button>
+      <input id="importFile" type="file" accept=".json" style="display:none" onchange="importData(event)" />
+      <button class="btn-danger" onclick="resetAll()">Reiniciar</button>
+    </div>
+  </header>
+
+  <div class="grid">
+    <div class="card">
+      <h2>Marcador PVP (Versus)</h2>
+      <div class="versus-box">
+        <div class="p1">
+          <input id="p1Name" value="Jugador 1" style="width:100%;text-align:center;font-weight:700" onchange="saveState()" />
+          <div class="score" id="p1Score">0</div>
+          <div class="score-btns">
+            <button onclick="chg('p1Score', -1)">-</button>
+            <button class="btn-primary" onclick="chg('p1Score', 1)">+1</button>
+          </div>
+        </div>
+        <div style="font-weight:800;color:var(--muted)">VS</div>
+        <div class="p2">
+          <input id="p2Name" value="Jugador 2" style="width:100%;text-align:center;font-weight:700" onchange="saveState()" />
+          <div class="score" id="p2Score">0</div>
+          <div class="score-btns">
+            <button onclick="chg('p2Score', -1)">-</button>
+            <button class="btn-primary" onclick="chg('p2Score', 1)">+1</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Mi Run (Vidas y Caramelos)</h2>
+      <div class="stats-row">
+        <div class="stat">
+          <label>Vidas</label>
+          <div class="val" id="lives" style="color:var(--green)">10</div>
+          <div class="score-btns">
+            <button onclick="chg('lives', -1)">-</button>
+            <button onclick="chg('lives', 1)">+</button>
+          </div>
+        </div>
+        <div class="stat">
+          <label>Muertes</label>
+          <div class="val" id="deaths" style="color:var(--accent)">0</div>
+          <div class="score-btns">
+            <button onclick="chg('deaths', -1)">-</button>
+            <button onclick="chg('deaths', 1)">+</button>
+          </div>
+        </div>
+        <div class="stat">
+          <label>Caramelos</label>
+          <div class="val" id="candies" style="color:var(--purple)">0</div>
+          <div class="score-btns">
+            <button onclick="chg('candies', -1)">-</button>
+            <button onclick="chg('candies', 1)">+</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-bottom:20px">
+    <h2>Level Caps y Puntos de Combate PVP <span style="font-size:.8rem;color:var(--muted)">(clic para marcar completado)</span></h2>
+    <div id="capsList" class="caps-list"></div>
+  </div>
+
+  <div class="card">
+    <h2>Registro de Rutas y Capturas</h2>
+    <div class="form-row">
+      <input id="fRoute" placeholder="Ruta / Zona (ej. Ruta 2)" />
+      <input id="fSpecies" placeholder="Pokémon (ej. Garchomp)" />
+      <input id="fNick" placeholder="Mote" />
+      <select id="fStatus">
+        <option value="equipo">En Equipo</option>
+        <option value="pc">En PC</option>
+        <option value="muerto">Muerto</option>
+        <option value="fallido">Fallido / Huido</option>
+      </select>
+      <button class="btn-primary" onclick="addEncounter()">Añadir</button>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th>Ruta / Zona</th>
+          <th>Pokémon</th>
+          <th>Mote</th>
+          <th>Estado</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody id="encTable"></tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+const CAPS = {
+  xy: [
+    ["1. Violeta (Bicho)", "Nv. 12"], ["2. Lino (Roca)", "Nv. 25"], ["3. Corelia (Lucha)", "Nv. 32"],
+    ["4. Amaro (Planta)", "Nv. 34"], ["5. Lem (Eléctrico)", "Nv. 37"], ["6. Valeria (Hada)", "Nv. 42"],
+    ["7. Ástrid (Psíquico)", "Nv. 48"], ["8. Édel (Hielo)", "Nv. 59"], ["Liga (Dianta)", "Nv. 68"]
+  ],
+  oras: [
+    ["1. Petra (Roca)", "Nv. 14"], ["2. Marcial (Lucha)", "Nv. 16"], ["3. Erico (Eléctrico)", "Nv. 21"],
+    ["4. Candela (Fuego)", "Nv. 28"], ["5. Norman (Normal)", "Nv. 30"], ["6. Alana (Volador)", "Nv. 35"],
+    ["7. Vito y Leti (Psíq.)", "Nv. 45"], ["8. Plubio (Agua)", "Nv. 46"], ["Liga (Máximo)", "Nv. 59"]
+  ],
+  sm: [
+    ["1. Prueba Ilima", "Nv. 12"], ["2. Gran Prueba Kaudan", "Nv. 15"], ["3. Prueba Nereida", "Nv. 20"],
+    ["4. Prueba Kiawe", "Nv. 22"], ["5. Prueba Lulú", "Nv. 24"], ["6. Gran Prueba Mayla", "Nv. 26"],
+    ["7. Prueba Chris", "Nv. 29"], ["8. Prueba Zarala", "Nv. 33"], ["9. Gran Prueba Denio", "Nv. 39"],
+    ["10. Prueba Dragón", "Nv. 45"], ["11. Gran Prueba Hela", "Nv. 48"], ["Liga Pokémon", "Nv. 58"]
+  ],
+  usum: [
+    ["1. Prueba Ilima", "Nv. 12"], ["2. Gran Prueba Kaudan", "Nv. 16"], ["3. Prueba Nereida", "Nv. 20"],
+    ["4. Prueba Kiawe", "Nv. 22"], ["5. Prueba Lulú", "Nv. 24"], ["6. Gran Prueba Mayla", "Nv. 28"],
+    ["7. Prueba Chris", "Nv. 33"], ["8. Prueba Zarala", "Nv. 35"], ["9. Gran Prueba Denio", "Nv. 44"],
+    ["10. Ultra-Necrozma", "Nv. 60"], ["11. Gran Prueba Hela", "Nv. 55"], ["Liga Pokémon", "Nv. 60"]
+  ]
+};
+
+const KEY = "pokemon_duallocke_3ds_v1";
+let state = JSON.parse(localStorage.getItem(KEY) || "null") || {
+  game: "oras", p1Name: "Eneko", p2Name: "Amigo", p1Score: 0, p2Score: 0,
+  lives: 10, deaths: 0, candies: 0, doneCaps: {}, encounters: []
+};
+
+function saveState() {
+  state.game = document.getElementById("gameSelect").value;
+  state.p1Name = document.getElementById("p1Name").value;
+  state.p2Name = document.getElementById("p2Name").value;
+  localStorage.setItem(KEY, JSON.stringify(state));
+}
+
+function chg(field, delta) {
+  state[field] = Math.max(0, (state[field] || 0) + delta);
+  saveState(); render();
+}
+
+function toggleCap(key) {
+  state.doneCaps[key] = !state.doneCaps[key];
+  saveState(); render();
+}
+
+function addEncounter() {
+  const route = document.getElementById("fRoute").value.trim();
+  const species = document.getElementById("fSpecies").value.trim();
+  const nick = document.getElementById("fNick").value.trim();
+  const status = document.getElementById("fStatus").value;
+  if (!route) return;
+  state.encounters.unshift({ id: Date.now(), route, species: species || "-", nick: nick || "-", status });
+  document.getElementById("fRoute").value = "";
+  document.getElementById("fSpecies").value = "";
+  document.getElementById("fNick").value = "";
+  saveState(); render();
+}
+
+function cycleStatus(id) {
+  const order = ["equipo", "pc", "muerto", "fallido"];
+  const item = state.encounters.find(e => e.id === id);
+  if (!item) return;
+  item.status = order[(order.indexOf(item.status) + 1) % order.length];
+  saveState(); render();
+}
+
+function delEncounter(id) {
+  state.encounters = state.encounters.filter(e => e.id !== id);
+  saveState(); render();
+}
+
+function render() {
+  document.getElementById("gameSelect").value = state.game;
+  document.getElementById("p1Name").value = state.p1Name;
+  document.getElementById("p2Name").value = state.p2Name;
+  document.getElementById("p1Score").textContent = state.p1Score;
+  document.getElementById("p2Score").textContent = state.p2Score;
+  document.getElementById("lives").textContent = state.lives;
+  document.getElementById("deaths").textContent = state.deaths;
+  document.getElementById("candies").textContent = state.candies;
+
+  const capsEl = document.getElementById("capsList");
+  capsEl.innerHTML = "";
+  (CAPS[state.game] || []).forEach(([name, lvl], i) => {
+    const k = state.game + "_" + i;
+    const div = document.createElement("div");
+    div.className = "cap-item" + (state.doneCaps[k] ? " done" : "");
+    div.onclick = () => toggleCap(k);
+    div.innerHTML = `<span>${name}</span><span class="badge">${lvl}</span>`;
+    capsEl.appendChild(div);
+  });
+
+  const labels = { equipo: "En Equipo", pc: "En PC", muerto: "Muerto", fallido: "Fallido" };
+  const tb = document.getElementById("encTable");
+  tb.innerHTML = state.encounters.map(e => `
+    <tr>
+      <td>${e.route}</td>
+      <td><strong>${e.species}</strong></td>
+      <td>${e.nick}</td>
+      <td><span class="pill st-${e.status}">${labels[e.status] || e.status}</span></td>
+      <td>
+        <button class="small-btn" onclick="cycleStatus(${e.id})">Cambiar estado</button>
+        <button class="small-btn btn-danger" onclick="delEncounter(${e.id})">X</button>
+      </td>
+    </tr>
+  `).join("");
+}
+
+function exportData() {
+  const blob = new Blob([JSON.stringify(state, null, 2)], { type: "application/json" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "duallocke-3ds-backup.json";
+  a.click();
+}
+
+function importData(ev) {
+  const f = ev.target.files[0];
+  if (!f) return;
+  const r = new FileReader();
+  r.onload = () => {
+    try { state = JSON.parse(r.result); saveState(); render(); } catch { alert("Archivo JSON no válido."); }
+  };
+  r.readAsText(f);
+}
+
+function resetAll() {
+  if (!confirm("¿Seguro que quieres reiniciar todo el tracker?")) return;
+  localStorage.removeItem(KEY);
+  location.reload();
+}
+
+document.getElementById("gameSelect").addEventListener("change", () => { saveState(); render(); });
+render();
+</script>
+</body>
+</html>

@@ -1,0 +1,22 @@
+# Herramientas pesadas descargadas automaticamente por setup.ps1
+tools/
+
+# ROMs y archivos de juego (no se suben a GitHub)
+roms/*.3ds
+roms/*.cci
+roms/*.cxi
+roms/*.cia
+roms/*.zip
+roms/*.7z
+
+# Copias de seguridad de partidas y mods generados
+saves-backup/*
+!saves-backup/.gitkeep
+mods-para-compartir/*
+!mods-para-compartir/LEEME.txt
+
+# Archivos temporales
+*.log
+*.tmp
+.DS_Store
+Thumbs.db

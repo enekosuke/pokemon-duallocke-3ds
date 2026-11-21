@@ -1,0 +1,13 @@
+Coloca aqui tu ROM DESENCRIPTADA de Pokemon 3DS (.3ds, .cci o .cxi).
+
+Juegos compatibles:
+- Pokemon X / Y
+- Pokemon Rubi Omega / Zafiro Alfa
+- Pokemon Sol / Luna
+- Pokemon Ultrasol / Ultraluna
+
+IMPORTANTE:
+1. La ROM debe estar DESENCRIPTADA (decrypted) para que funcionen tanto
+   Universal Pokemon Randomizer FVX como Azahar.
+2. En Azahar, haz doble clic en el area central o ve a
+   Archivo -> Anadir carpeta de juegos y selecciona esta carpeta (roms).
