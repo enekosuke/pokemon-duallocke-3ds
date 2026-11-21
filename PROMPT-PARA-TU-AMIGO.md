@@ -5,39 +5,47 @@ Copia este texto completo y pásaselo a tu amigo para que lo pegue tal cual en s
 ---
 
 ```text
-Hola, quiero que me montes y configures AL MILÍMETRO mi portátil para jugar un Pokémon Y Randomlocke / DualLocke de Nintendo 3DS online contra mi amigo Eneko (cada uno desde su casa). No sé mucho de ordenadores, así que haz tú todos los comandos posibles por mí y explícame con pasos clarísimos lo poco que tenga que pulsar yo.
+Hola, quiero que me montes y configures AL MILÍMETRO mi portátil para jugar un Pokémon Y Randomlocke / DualLocke de Nintendo 3DS online contra mi amigo Eneko (cada uno desde su casa). No sé mucho de ordenadores, así que haz tú todos los comandos posibles por mí y déjamelo EXACTAMENTE igual que a él: listo para abrir y jugar con un solo clic (`0-JUGAR-POKEMON-Y.bat`), pero con UNA SEMILLA DISTINTA para que mi partida tenga Pokémon aleatorios diferentes a los suyos (con las mismas reglas).
 
 Todo el entorno, instalador, preset de randomización y guía están en este repositorio de GitHub:
 https://github.com/enekosuke/pokemon-duallocke-3ds
 
-Ejecuta estos pasos en orden y verifica cada uno:
+Ejecuta estos pasos en orden y verifica cada uno sin saltarte nada:
 
 1. DESCARGA DEL ENTORNO:
-   - Clona o descarga el repo https://github.com/enekosuke/pokemon-duallocke-3ds en `%USERPROFILE%\Downloads\Pokemon-DualLocke-3DS` (si no tengo `git`, descarga el ZIP de `https://github.com/enekosuke/pokemon-duallocke-3ds/archive/refs/heads/main.zip` y extráelo ahí).
+   - Clona o descarga el repositorio `https://github.com/enekosuke/pokemon-duallocke-3ds` en `%USERPROFILE%\Downloads\Pokemon-DualLocke-3DS` (si no tengo `git`, descarga el ZIP de `https://github.com/enekosuke/pokemon-duallocke-3ds/archive/refs/heads/main.zip` y extráelo ahí manteniendo la carpeta `Pokemon-DualLocke-3DS`).
 
-2. INSTALACIÓN AUTOMÁTICA DE PROGRAMAS + RADMIN VPN:
-   - Entra en esa carpeta y ejecuta:
+2. INSTALACIÓN AUTOMÁTICA DE TODO + RADMIN VPN:
+   - Entra en `%USERPROFILE%\Downloads\Pokemon-DualLocke-3DS` y ejecuta:
      `powershell -NoProfile -ExecutionPolicy Bypass -File .\setup.ps1 -InstallRadminVPN`
-   - Esto instalará Azahar 2126.2 (portátil, preconfigurado en español y HD 2x), Universal Pokémon Randomizer FVX v1.6.3, PKHeX, .NET Windows Desktop Runtime (si falta) y Radmin VPN.
-   - Si Radmin VPN no quedó instalado por algún aviso de administrador (UAC), dime exactamente cómo aceptar la ventana o instálalo con `winget install Famatech.RadminVPN` y espera a que lo confirme.
+   - Esto instala y preconfigura en modo portátil:
+     * Azahar 2126.2 (en español, resolución 2x HD, carpeta `roms\` añadida)
+     * Universal Pokémon Randomizer FVX v1.6.3 (con Java incluido)
+     * PKHeX + .NET Windows Desktop Runtime (para Caramelos Raros y exportar equipo)
+     * Radmin VPN (para conectar mi PC con el de Eneko desde casa)
+   - Si Radmin VPN no quedó instalado porque saltó o falló el aviso de administrador (UAC), avísame claramente o ejecuta `winget install Famatech.RadminVPN` y dime qué botón pulsar.
 
-3. REVISIÓN OBLIGATORIA DE DRIVER GRÁFICO (GTX 1050):
-   - Comprueba la fecha y versión real del driver de mi NVIDIA GeForce GTX 1050 con PowerShell (`Get-CimInstance Win32_VideoController`).
-   - Mi portátil tenía un driver de mayo de 2017 (`22.21.13.8205`). Si sigue siendo antiguo (anterior a 2023), DÍMELO EN MAYÚSCULAS como aviso prioritario y dame el enlace directo de NVIDIA (`https://www.nvidia.com/es-es/drivers/`) explicándome paso a paso qué elegir (GeForce -> GeForce GTX 10 Series (Notebooks) -> GeForce GTX 1050 -> Windows 10/11 64-bit -> Game Ready Driver) e instalarlo como "Instalación rápida" y reiniciar el PC.
+3. REVISIÓN OBLIGATORIA DEL DRIVER DE MI GRÁFICA (GTX 1050):
+   - Comprueba la fecha y versión real del driver de mi NVIDIA GeForce GTX 1050 con:
+     `Get-CimInstance Win32_VideoController | Select-Object Name, DriverVersion, DriverDate`
+   - Mi portátil tenía un driver de mayo de 2017 (`22.21.13.8205`). Si sigue siendo anterior a 2023, AVÍSAME EN MAYÚSCULAS al principio de tu respuesta y dame el enlace oficial (`https://www.nvidia.com/es-es/drivers/`) indicándome paso a paso qué elegir (`GeForce` -> `GeForce GTX 10 Series (Notebooks)` -> `GeForce GTX 1050` -> `Windows 10/11 64-bit` -> `Game Ready Driver`), darle a `Instalación rápida` y reiniciar el portátil.
 
 4. FIREWALL PARA MULTIJUGADOR (AZAHAR + RADMIN VPN):
-   - Revisa o añade reglas de firewall de Windows (si tienes permisos, o dime si hace falta) para que `tools\azahar\azahar.exe` pueda conectarse sin bloqueos por Radmin VPN.
+   - Comprueba si hay reglas de Firewall de Windows bloqueando `tools\azahar\azahar.exe` y añade reglas de entrada/salida si tienes permisos (o dime en 2 pasos cómo permitir Azahar si salta el aviso del Firewall de Windows al abrirlo).
 
-5. ROM Y PARChE RANDOMLOCKE EXACTO (MISMA SEMILLA QUE ENEKO):
-   - Comprueba si ya tengo una ROM `.cci` o `.3ds` (o un `.7z`/`.zip`) en `%USERPROFILE%\Downloads` o en `roms\`. Si tengo un archivo comprimido de Pokémon Y en Descargas, descomprímelo tú directamente en `roms\`.
-   - En cuanto esté la ROM `.cci`/`.3ds` de Pokémon Y en `roms\`, ejecuta:
+5. ROM DE POKÉMON Y + GENERACIÓN DE MI SEMILLA DISTINTA (MISMO PRESET QUE ENEKO):
+   - Busca si ya tengo la ROM de Pokémon Y (`.cci`, `.3ds`, `.7z` o `.zip`) en `%USERPROFILE%\Downloads` o en `roms\`. Si está comprimida (`.7z` o `.zip`), descomprímela tú automáticamente en `roms\` (limpiando archivos basura si los hubiera y dejando el `.cci` / `.3ds` limpio dentro de `roms\`).
+   - En cuanto la ROM esté en `roms\`, ejecuta:
      `powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\randomize-auto.ps1`
-   - Eso generará exactamente la misma partida randomizada de Eneko (`presets\pokemon-y-randomlocke.rnqs` + semilla `20261121`) y la instalará automáticamente en `tools\azahar\user\load\mods\0004000000055E00\`.
-   - Si todavía no he puesto la ROM, dime exactamente qué archivo tengo que meter en `roms\` (la misma ROM `Pokemon Y (USA) (En,Ja,Fr,De,Es,It,Ko).cci` desencriptada que tiene Eneko) y que en cuanto la meta te avise para que tú ejecutes `randomize-auto.ps1` por mí.
+   - IMPORTANTE: NO uses la semilla `20261121` (esa es la de Eneko). El script sin parámetros genera automáticamente una semilla nueva aleatoria distinta usando exactamente el mismo archivo de reglas (`presets\pokemon-y-randomlocke.rnqs`: iniciales, salvajes, estáticos, habilidades sin Superguarda, ataques, MTs, objetos, gimnasios y entrenadores random + evoluciones por intercambio activadas + Caramelos Raros baratos) y lo instala automáticamente en `tools\azahar\user\load\mods\0004000000055E00\`.
+   - Si todavía no tengo la ROM descargada en el PC, dímelo claro: necesito el archivo desencriptado `Pokemon Y (USA) (En,Ja,Fr,De,Es,It,Ko).cci` (o `.3ds`) metido en la carpeta `roms\`, y que en cuanto lo ponga o lo descargue te avise para que tú termines este paso por mí.
 
-6. VERIFICACIÓN FINAL Y GUÍA DE USO PARA MÍ:
-   - Al terminar, haz un resumen claro de qué está listo (`Azahar`, `UPR FVX`, `PKHeX`, `Radmin VPN`, `Driver GPU`, `ROM` y `Mod Randomlocke`) y explícame con botones sencillos:
-     a) Cómo abrir el juego con un clic (`0-JUGAR-POKEMON-Y.bat`) y configurar mi mando/teclado la primera vez.
-     b) Cómo abrir Radmin VPN, encenderlo y unirme a la red que cree Eneko.
-     c) Cómo conectarme en Azahar (`Multijugador -> Conexión directa a una sala` con la IP `26.x.x.x` de Radmin VPN de Eneko y puerto `24872`) y combatir dentro del juego por el PSS (sin darle al botón de Internet).
+6. ACCESO DIRECTO DE 1 CLIC Y COMPROBACIÓN FINAL:
+   - Crea también un acceso directo en mi Escritorio apuntando a `0-JUGAR-POKEMON-Y.bat` llamado `Jugar Pokemon Y Randomlocke` para que solo tenga que hacer doble clic ahí.
+   - Verifica en disco que existen: `tools\azahar\azahar.exe`, `tools\azahar\user\config\qt-config.ini`, `tools\upr-fvx\UPR-FVX.jar`, `tools\pkhex\PKHeX.exe`, Radmin VPN, la ROM en `roms\` y el mod en `tools\azahar\user\load\mods\0004000000055E00\romfs`.
+   - Al final, explícame como para alguien que no sabe de informática:
+     a) Cómo abrir el juego con 1 clic (`Jugar Pokemon Y Randomlocke` en el Escritorio) y configurar mi teclado/mando la primera vez en Azahar.
+     b) Cómo abrir Radmin VPN, encenderlo (`Encender`) y hacer `Red -> Unirse a una red` con el nombre y contraseña que me diga Eneko.
+     c) Cómo conectarme a su sala en Azahar (`Multijugador -> Conexión directa a una sala`, metiendo su IP `26.x.x.x` y puerto `24872`) y retarle por el **PSS** dentro del juego (sin pulsar el botón azul de Internet).
+     d) Cómo exportar mi equipo con `4-Abrir-PKHeX.bat` a Pokémon Showdown (`[Gen 6] Custom Game`) por si alguna vez preferimos combatir rápido en navegador.
 ```

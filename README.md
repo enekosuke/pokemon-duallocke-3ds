@@ -24,7 +24,7 @@ Una vez completada la instalación inicial:
 | `6-Backup-Save.bat` | Hace copia de seguridad de tu partida guardada (`main`) y te muestra su ruta exacta. |
 | `7-Tracker-DualLocke.html` | Tracker visual en navegador (marcador PVP entre vosotros, vidas, muertes, rutas y *Level Caps*). |
 | `presets/pokemon-y-randomlocke.rnqs` | Preset exacto de reglas (Pokémon, habilidades sin Superguarda, ataques, MTs, objetos, gimnasios/entrenadores random + evoluciones por intercambio activadas + Caramelos baratos en tiendas). |
-| `scripts/randomize-auto.ps1` | Genera e instala automáticamente el mod LayeredFS con la **semilla fija `20261121`** para que ambos jugadores tengáis exactamente el mismo mundo. |
+| `scripts/randomize-auto.ps1` | Genera e instala automáticamente el mod LayeredFS con las mismas reglas (`presets/pokemon-y-randomlocke.rnqs`) y una **semilla aleatoria nueva** por defecto (o `-Seed <numero>` si queréis compartir la misma). |
 
 ---
 
@@ -47,8 +47,7 @@ Una vez completada la instalación inicial:
    ```powershell
    powershell -ExecutionPolicy Bypass -File .\scripts\randomize-auto.ps1
    ```
-   Esto genera el parche **LayeredFS** con la semilla fija **`20261121`** y lo instala automáticamente en `tools\azahar\user\load\mods\0004000000055E00\`.
-   *(Alternativamente, el primer jugador puede comprimir en `.zip` su carpeta `mods-para-compartir\pokemon-y-randomlocke\0004000000055E00` y pasársela al otro por Discord para instalarla con `5-Instalar-Mod-LayeredFS.bat`).*
+   Esto genera el parche **LayeredFS** con una **semilla nueva aleatoria** (o pásale `-Seed 20261121` si quieres exactamente la misma que Eneko) y lo instala automáticamente en `tools\azahar\user\load\mods\0004000000055E00\`.
 
 ---
 

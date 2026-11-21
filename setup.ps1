@@ -273,7 +273,7 @@ Write-Step "7/7 Comprobando ROM y parche Randomlocke..."
 $hasRom = Get-ChildItem -Path $RomsDir -File -ErrorAction SilentlyContinue | Where-Object { $_.Extension -in ".cci", ".3ds", ".cxi" } | Select-Object -First 1
 $hasMod = (Get-ChildItem -Path (Join-Path $AzaharDir "user\load\mods") -Directory -ErrorAction SilentlyContinue | Measure-Object).Count -gt 0
 if ($hasRom -and (-not $hasMod) -and (-not $SkipAutoRandomize)) {
-    Write-Host "  ROM detectada ($($hasRom.Name)) sin mod instalado. Aplicando preset Randomlocke (seed 20261121)..."
+    Write-Host "  ROM detectada ($($hasRom.Name)) sin mod instalado. Aplicando preset Randomlocke (nueva semilla aleatoria)..."
     & (Join-Path $BaseDir "scripts\randomize-auto.ps1")
 } elseif ($hasMod) {
     Write-Ok "Parche LayeredFS Randomlocke ya instalado en Azahar."

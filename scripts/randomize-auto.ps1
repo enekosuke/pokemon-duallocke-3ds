@@ -5,11 +5,15 @@
 # ==============================================================================
 
 param(
-    [string]$Seed = "20261121",
+    [string]$Seed = "random",
     [string]$PresetPath = ""
 )
 
 $ErrorActionPreference = "Stop"
+if (-not $Seed -or $Seed -eq "random") {
+    $Seed = [string](Get-Random -Minimum 1000000 -Maximum 99999999)
+    if ($Seed -eq "20261121") { $Seed = "20261122" }
+}
 $BaseDir = Split-Path -Parent (Split-Path -Parent $MyInvocation.MyCommand.Path)
 $RomsDir = Join-Path $BaseDir "roms"
 $UprDir = Join-Path $BaseDir "tools\upr-fvx"
