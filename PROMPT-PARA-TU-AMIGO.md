@@ -27,7 +27,7 @@ PASO 1. ACTUALIZAR EL CÓDIGO (con o sin Git)
   Expand-Archive "$tmp\main.zip" -DestinationPath $tmp -Force
   robocopy "$tmp\pokemon-duallocke-3ds-main" "C:\Users\Enara\Downloads\Pokemon-DualLocke-3DS" /E /XD roms tools saves-backup .git /NFL /NDL /NJH /NJS
   (robocopy devuelve códigos 0 a 7 cuando va bien; solo 8 o más es error.) Esto sobrescribe scripts, presets, README y .bat con la última versión y NO toca roms\, tools\ ni saves-backup\. Después borra $tmp.
-- Comprueba que existen y están actualizados: scripts\enhance-romfs.ps1 (debe contener el texto "Lz11CompressSafe" y "MAXCHAIN"), scripts\randomize-auto.ps1 (debe contener "Xmx3072M") y scripts\rom-engine.ps1.
+- Comprueba que existen y están actualizados: scripts\enhance-romfs.ps1 (debe contener "MAXCHAIN", "PatchTradeEvolutions" y "PatchNoWildLegendaries"), scripts\randomize-auto.ps1 (debe contener "Xmx3072M" y "42189044") y scripts\rom-engine.ps1 (debe contener "random_eggs").
 - NO ejecutes setup.ps1 ni 1-Instalar-o-Reparar-Todo.bat (ya está todo instalado y no hace falta).
 
 PASO 2. CONFIGURACIÓN LIGERA DE AZAHAR (debe quedar EXACTA)
@@ -47,23 +47,23 @@ PASO 3. COPIA DE SEGURIDAD DEL SAVE Y BORRADO LIMPIO
 - Comprueba que la carpeta data ya no existe.
 
 PASO 4. GENERAR EL SISTEMA COMPLETO CON UNA SEMILLA NUEVA
-- Semillas PROHIBIDAS (son de Eneko): 20261121, 65344194 y 52824960. Tampoco repitas la semilla que ya tuviera yo antes si la conoces.
+- Semillas PROHIBIDAS (son de Eneko): 20261121, 65344194, 52824960 y 42189044. Tampoco repitas la semilla que ya tuviera yo antes si la conoces.
 - Ejecuta, con Azahar cerrado:
   powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\randomize-auto.ps1
   Sin parámetros genera una semilla aleatoria que no coincide con las prohibidas. Si prefieres elegirla tú, usa -Seed <número de 8 cifras distinto de las prohibidas>.
 - Mira la salida: tiene que decir "RAM detectada: ... GB -> Java -Xmx3072M". Si dice -Xmx4608M, para y avísame (no lo ejecutes así con 8 GB). Tarda más o menos medio minuto.
 - Apunta la semilla que muestra ("Semilla: NNNNNNNN").
-- El script ya aplica solo, en este orden: UPR FVX con el preset presets\pokemon-y-randomlocke.rnqs, scripts\enhance-romfs.ps1 (IA experta, Caramelo Raro a 10 pokedólares y regulación de 3ªs evoluciones antes del 4º gimnasio) y scripts\rom-engine.ps1 -Apply (muerte permanente, tope de nivel y caramelos en tiendas). No hace falta ejecutarlos a mano.
+- El script ya aplica solo, en este orden: UPR FVX con el preset presets\pokemon-y-randomlocke.rnqs, scripts\enhance-romfs.ps1 (IA experta, Caramelo Raro a 10 pokedólares, regulación de 3ªs evoluciones antes del 4º gimnasio, evoluciones por intercambio pasadas a nivel y sin legendarios en las rutas) y scripts\rom-engine.ps1 -Apply (muerte permanente con devolución del objeto equipado, tope de nivel, caramelos en tiendas y huevos aleatorios). No hace falta ejecutarlos a mano.
 - Dependencias: ninguna extra. Todo es PowerShell con .NET incluido en Windows y los programas de tools\. No instales Python ni nada más.
 
 PASO 5. VERIFICAR EN DISCO (muéstrame los resultados)
 Dentro de tools\azahar\user\load\mods\0004000000055E00\ comprueba:
-- exefs\code.bin existe (unos 5 MB) y exefs\code.ips existe y pesa EXACTAMENTE 630 bytes.
+- exefs\code.bin existe (unos 5 MB) y exefs\code.ips existe y pesa EXACTAMENTE 698 bytes.
 - romfs\a\0\1\2 existe y pesa entre 850000 y 900000 bytes (si pesa cerca de 966000 o más, el parche de evoluciones falló: avísame, no juegues).
 - romfs\a\0\3\8, romfs\a\2\2\0, romfs\a\2\1\5, romfs\a\2\1\8 existen.
 - romfs\DllBattle.cro existe y pesa 1040384 bytes (arreglo del cuelgue al ganar EXP en el tope de nivel). La salida del paso 4 debe decir "Tope en combate (DllBattle.cro): aplicado".
-- presets\pro-rules.json existe con permadeath true, level_cap true y mart_candies true.
-- En la salida del paso 4 aparecen estas confirmaciones: "IA Experta Maxima (0x07) aplicada a N entrenadores/gimnasios" (N cambia con cada semilla, cualquier número mayor que 0 vale), "Precio del Caramelo Raro ajustado a 10 pokedolares" y "MOTOR NATIVO ARM32 PRO APLICADO".
+- presets\pro-rules.json existe con permadeath true, level_cap true, mart_candies true y random_eggs true.
+- En la salida del paso 4 aparecen estas confirmaciones: "IA Experta Maxima (0x07) aplicada a N entrenadores/gimnasios" (N cambia con cada semilla, cualquier número mayor que 0 vale), "Precio del Caramelo Raro ajustado a 10 pokedolares", "Sin legendarios en encuentros salvajes", "Evoluciones por intercambio pasadas a nivel", "Huevos aleatorios: ACTIVADO" y "MOTOR NATIVO ARM32 PRO APLICADO".
 - git status no debe mostrar ROMs ni tools\ (están ignorados).
 
 PASO 6. ACCESOS DIRECTOS EN EL ESCRITORIO
@@ -76,10 +76,11 @@ PASO 7. EXPLICACIÓN FINAL PARA MÍ (lenguaje sencillo, sin tecnicismos)
 Cuando termines, escríbeme esto en castellano claro:
 1. Qué semilla me ha tocado y que es distinta de la de Eneko (mismas reglas, Pokémon distintos).
 2. Cómo jugar: doble clic en "Jugar Pokemon Y Randomlocke" del Escritorio. Es partida nueva: la primera vez sale una pantalla para elegir idioma, elige Spanish, confirma con "Begin game" y sigue la intro. La tecla Tab activa y desactiva el turbo.
-3. Reglas del sistema: a partir de la 1ª medalla, los Pokémon debilitados se pierden para siempre (en combates PVP no) y el objeto que llevaban equipado vuelve a la mochila. Hay un tope de nivel según las medallas que llevas (12, 25, 32, 34, 37, 42, 48, 59 y 68). El Caramelo Raro se compra en las tiendas por 10 pokédolares. Las evoluciones finales fuertes y los legendarios no aparecen hasta pasar el 4º gimnasio. Los Pokémon que evolucionaban por intercambio evolucionan solos al subir de nivel (30, 37, 45 o 50 según el Pokémon), sin objeto ni intercambio.
-4. Cómo conectarme con Eneko: abrir Radmin VPN, encenderlo y unirme a la red que me diga él. Después doble clic en "Jugar Online Pokemon Y" y elegir la opción 2 (Unirse a sala), poner la IP 26.x.x.x de Eneko y mi apodo. En el juego usar el combate inalámbrico local del PSS, SIN pulsar el botón azul de Internet, y con el turbo desactivado durante el combate.
-5. Plan B si falla la conexión: 4-Abrir-PKHeX.bat, abrir mi partida y exportar el equipo a Pokémon Showdown en [Gen 6] Custom Game.
-6. Que mi partida anterior (si existía) quedó guardada en saves-backup\ y que no debo borrar esa carpeta.
+3. Reglas del sistema: a partir de la 1ª medalla, los Pokémon debilitados se pierden para siempre (en combates PVP no) y el objeto que llevaban equipado vuelve a la mochila. No salen legendarios en hierba, cuevas, agua ni cañas. Los huevos de la Guardería son de un Pokémon totalmente aleatorio (puede salir cualquiera, incluso legendarios, que tardan mucho en eclosionar). Hay un tope de nivel según las medallas que llevas (12, 25, 32, 34, 37, 42, 48, 59 y 68). El Caramelo Raro se compra en las tiendas por 10 pokédolares. Las evoluciones finales fuertes y los legendarios no aparecen hasta pasar el 4º gimnasio. Los Pokémon que evolucionaban por intercambio evolucionan solos al subir de nivel (30, 37, 45 o 50 según el Pokémon), sin objeto ni intercambio.
+4. Antes del primer combate online: con el juego detenido, en Azahar ir a Emulación → Configurar → Sistema y cambiar "Nombre de usuario" (por defecto AZAHAR) por mi nombre, porque si los dos tenemos el mismo la sala no nos deja entrar. Para conectar se usa Multijugador → Conectar Directamente a Sala (NO "Crear Sala").
+5. Cómo conectarme con Eneko: abrir Radmin VPN, encenderlo y unirme a la red que me diga él. Después doble clic en "Jugar Online Pokemon Y" y elegir la opción 2 (Unirse a sala), poner la IP 26.x.x.x de Eneko y mi apodo. En el juego usar el combate inalámbrico local del PSS, SIN pulsar el botón azul de Internet, y con el turbo desactivado durante el combate.
+6. Plan B si falla la conexión: 4-Abrir-PKHeX.bat, abrir mi partida y exportar el equipo a Pokémon Showdown en [Gen 6] Custom Game.
+7. Que mi partida anterior (si existía) quedó guardada en saves-backup\ y que no debo borrar esa carpeta.
 
 Si algo no se puede hacer (por ejemplo un permiso de administrador), dímelo claro y dame el paso exacto para hacerlo yo.
 ```

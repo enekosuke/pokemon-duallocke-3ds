@@ -3,8 +3,8 @@
 Entorno completo, portátil y 100% autocontenido en una sola carpeta (`C:\Users\Usuario\Downloads\Pokemon-DualLocke-3DS`) para jugar **Pokémon Y (Nintendo 3DS, USA v1.0, Title ID `0004000000055E00`) Randomlocke / DualLocke PRO** en PC, con motor nativo ARM32 (Muerte Permanente + Hard Level Cap + Caramelos Raros infinitos en tiendas por 10₽), parches avanzados de RomFS (IA Experta + regulación de 3ªs evoluciones hasta el 4º Gimnasio) y multijugador online en 1 clic mediante Azahar + Radmin VPN.
 
 - **Repositorio GitHub (público, sin ROMs ni binarios pesados):** `https://github.com/enekosuke/pokemon-duallocke-3ds`
-- **Semillas ya usadas por Eneko (nunca repetir):** `20261121`, `65344194`, `52824960` (el script las excluye al generar una aleatoria).
-- **Semilla activa actual de Eneko:** `52824960` (semillas anteriores respaldadas en `saves-backup\`).
+- **Semillas ya usadas por Eneko (nunca repetir):** `20261121`, `65344194`, `52824960`, `42189044` (el script las excluye al generar una aleatoria).
+- **Semilla activa actual de Eneko:** `42189044` (semillas anteriores respaldadas en `saves-backup\`).
 - **Accesos directos en el Escritorio de Eneko:**
   - `Jugar Pokemon Y Randomlocke.lnk` → `0-JUGAR-POKEMON-Y.bat`
   - `Jugar Online Pokemon Y.lnk` → `00-JUGAR-ONLINE-CON-AMIGO.bat`
@@ -106,6 +106,13 @@ Todo el pipeline se aplica automáticamente al ejecutar `scripts/randomize-auto.
    - UPR FVX ya pasa los intercambios simples (Kadabra, Machoke, Graveler, Haunter, Boldore, Gurdurr, Phantump, Pumpkaboo) a **nivel 37**.
    - Los de objeto, que UPR deja como "subir de nivel con el objeto equipado", y Karrablast/Shelmet pasan a nivel normal: Onix, Scyther, Porygon, Feebas, Spritzee, Swirlix, Karrablast, Shelmet y Clamperl (macho → Huntail, hembra → Gorebyss) a **nivel 30**; Poliwhirl → Politoed a **37** (Poliwrath sigue con Piedra Agua); Seadra, Porygon2, Dusclops, Electabuzz y Magmar a **45**; Rhydon a **50**.
    - Se edita en el sitio (mismo tamaño); volver a ejecutarlo no cambia nada.
+6c. **Sin legendarios en encuentros salvajes (`scripts/enhance-romfs.ps1` → `romfs/a/0/1/2`, `-SkipNoLegend` para desactivarlo):**
+   - Recorre las 53 zonas con tabla de encuentros (hierba, cuevas, surf, cañas y hordas) y sustituye cualquier legendario o singular (Gen 1–6) por un Pokémon no legendario elegido de forma determinista. En las zonas previas al 4º Gimnasio el sustituto respeta la regulación (sin 3ªs etapas ni BST ≥ 580).
+   - Los encuentros fijos de la historia (Xerneas, Zygarde, Mewtwo, aves) no están en estas tablas y no se tocan.
+6d. **Huevos totalmente aleatorios (`scripts/rom-engine.ps1`, MOD 4, `random_eggs`):**
+   - En la función de la Guardería que crea el huevo (`0x003995E0`), la especie (`[r4+0x18]`) pasa a ser `rand(721)+1` con el mismo generador que el juego usa para Nidoran (`0x1122A8`). Puede salir cualquier Pokémon, legendarios incluidos.
+   - Se anulan las dos copias de forma de la madre (`0x3997F8`, `0x399848`), así el huevo siempre sale con forma normal y nunca con una forma que no exista en la especie nueva.
+   - Los legendarios tardan mucho en eclosionar (sus ciclos de huevo son muy altos).
 7. **Multijugador Online 1-Clic (`00-JUGAR-ONLINE-CON-AMIGO.bat` / `scripts/play-online.ps1`):**
    - `[1] Crear Sala (Anfitrión)`: abre Radmin VPN, detecta tu IP `26.x.x.x` y la copia al portapapeles, arranca `azahar-room.exe` (`DualLocke3DS`, puerto `24872`), pre-rellena `127.0.0.1` en Azahar y lanza el juego.
    - `[2] Unirse a Sala (Amigo)`: abre Radmin VPN, guarda IP + apodo en `presets/online-config.json`, prueba conectividad (`ping`), pre-rellena Azahar y lanza el juego.

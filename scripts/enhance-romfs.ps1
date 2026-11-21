@@ -7,13 +7,15 @@
 #       desbloquea al 100% a partir del 4o Gimnasio (Ruta 13 en adelante)!
 #    4. Evoluciones por intercambio -> por nivel (a/2/1/5): Onix, Scyther, Porygon,
 #       Seadra, Feebas, Clamperl, Karrablast/Shelmet, Spritzee, Swirlix... sin objeto ni cambio
+#    5. Sin legendarios/singulares en ningun encuentro salvaje (a/0/1/2, todas las zonas)
 # ==============================================================================
 
 param(
     [switch]$SkipAI,
     [switch]$SkipCandyPrice,
     [switch]$SkipEvoGate,
-    [switch]$SkipTradeEvo
+    [switch]$SkipTradeEvo,
+    [switch]$SkipNoLegend
 )
 
 $ErrorActionPreference = "Stop"
@@ -561,6 +563,79 @@ public static class PokemonYRomfsEnhancer
         WriteGarcSimple(encPath, encHdr, encBits, encEntries);
         return replacedSlots;
     }
+
+    // 5. Sin legendarios ni singulares en ningun encuentro salvaje (todas las zonas de a/0/1/2).
+    //    Los estaticos de la historia (Xerneas, Zygarde, Mewtwo, aves) no estan aqui y no se tocan.
+    //    Sustituto determinista (zona + hueco + especie) de un Pokemon no legendario; en las zonas
+    //    previas al 4o gimnasio el sustituto respeta la regulacion (sin 3as etapas ni BST >= 580).
+    public static readonly int[] Legendaries = {
+        144,145,146,150,151, 243,244,245,249,250,251, 377,378,379,380,381,382,383,384,385,386,
+        480,481,482,483,484,485,486,487,488,489,490,491,492,493,494,
+        638,639,640,641,642,643,644,645,646,647,648,649, 716,717,718,719,720,721 };
+
+    public static int PatchNoWildLegendaries(string encPath, string evoPath, string personalPath)
+    {
+        byte[] tmpH; uint[] tmpB;
+        var evos = ReadGarcSimple(evoPath, out tmpH, out tmpB);
+        var pers = ReadGarcSimple(personalPath, out tmpH, out tmpB);
+        var legend = new HashSet<int>(Legendaries);
+        var preEvo = new Dictionary<int, int>();
+        for (int sp = 1; sp <= 721 && sp < evos.Count; sp++)
+            for (int k = 0; k < 8 && (k + 1) * 6 <= evos[sp].Length; k++)
+            {
+                int m = BitConverter.ToUInt16(evos[sp], k * 6), t = BitConverter.ToUInt16(evos[sp], k * 6 + 4);
+                if (m != 0 && t >= 1 && t <= 721 && !preEvo.ContainsKey(t)) preEvo[t] = sp;
+            }
+        var poolAll = new List<int>(); var poolEarly = new List<int>();
+        for (int sp = 1; sp <= 721 && sp < pers.Count; sp++)
+        {
+            if (legend.Contains(sp) || pers[sp].Length < 6) continue;
+            poolAll.Add(sp);
+            int bst = pers[sp][0] + pers[sp][1] + pers[sp][2] + pers[sp][3] + pers[sp][4] + pers[sp][5];
+            bool stage3 = preEvo.ContainsKey(sp) && preEvo.ContainsKey(preEvo[sp]);
+            if (bst < 580 && !stage3) poolEarly.Add(sp);
+        }
+        var preGym4Maps = new HashSet<int> {
+            45, 157, 172, 259, 260, 261, 262, 263, 264, 266, 267, 268, 269, 270,
+            285, 286, 302, 303, 304, 305, 306, 307, 308, 334, 357 };
+
+        byte[] encHdr; uint[] encBits;
+        var encEntries = ReadGarcSimple(encPath, out encHdr, out encBits);
+        int replaced = 0;
+        for (int mapIdx = 0; mapIdx < encEntries.Count - 1; mapIdx++)
+        {
+            byte[] raw = encEntries[mapIdx];
+            bool wasLz = (raw.Length >= 4 && raw[0] == 0x11);
+            byte[] dec = wasLz ? Lz11Decompress(raw) : (byte[])raw.Clone();
+            if (dec.Length < 0x18) continue;
+            int encOff = BitConverter.ToInt32(dec, 0x10) + 0x10;
+            if (encOff < 0x14 || dec.Length - encOff < 0x178) continue;
+            var pool = preGym4Maps.Contains(mapIdx) ? poolEarly : poolAll;
+            bool changed = false;
+            for (int k = 0; k < 94; k++)
+            {
+                int slotOff = encOff + k * 4;
+                int sp = BitConverter.ToUInt16(dec, slotOff) & 0x7FF;
+                if (!legend.Contains(sp)) continue;
+                int newSp = pool[((mapIdx * 131 + k * 37 + sp * 17) & 0x7FFFFFFF) % pool.Count];
+                dec[slotOff] = (byte)(newSp & 0xFF);
+                dec[slotOff + 1] = (byte)((newSp >> 8) & 0xFF);   // forma 0
+                changed = true; replaced++;
+            }
+            if (!changed) continue;
+            byte[] packed = wasLz ? Lz11CompressSafe(dec) : dec;
+            if (wasLz)
+            {
+                byte[] back = Lz11Decompress(packed);
+                if (back.Length != dec.Length) throw new InvalidOperationException("LZ11 round-trip size mismatch en zona " + mapIdx);
+                for (int q = 0; q < dec.Length; q++)
+                    if (back[q] != dec[q]) throw new InvalidOperationException("LZ11 round-trip mismatch en zona " + mapIdx);
+            }
+            encEntries[mapIdx] = packed;
+        }
+        if (replaced > 0) WriteGarcSimple(encPath, encHdr, encBits, encEntries);
+        return replaced;
+    }
 }
 "@
 
@@ -608,6 +683,17 @@ if (-not $SkipEvoGate) {
     }
 }
 
+if (-not $SkipNoLegend) {
+    $encPath = Join-Path $RomfsDir "a\0\1\2"
+    $evoPath = Join-Path $RomfsDir "a\2\1\5"
+    $perPath = Join-Path $RomfsDir "a\2\1\8"
+    if ((Test-Path $encPath) -and (Test-Path $evoPath) -and (Test-Path $perPath)) {
+        $n = [PokemonYRomfsEnhancer]::PatchNoWildLegendaries($encPath, $evoPath, $perPath)
+        Write-Host "  [OK] Sin legendarios en encuentros salvajes ($n huecos sustituidos; 0 = ya estaba aplicado)." -ForegroundColor Green
+    } else {
+        Write-Host "  [AVISO] Faltan GARCs a/0/1/2, a/2/1/5 o a/2/1/8 en romfs." -ForegroundColor Yellow
+    }
+}
 if (-not $SkipTradeEvo) {
     $evoPath = Join-Path $RomfsDir "a\2\1\5"
     if (Test-Path $evoPath) {

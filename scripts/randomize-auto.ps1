@@ -13,7 +13,7 @@ $ErrorActionPreference = "Stop"
 if (-not $Seed -or $Seed -eq "random") {
     $Seed = [string](Get-Random -Minimum 1000000 -Maximum 99999999)
     # Semillas ya usadas por Eneko: nunca repetirlas
-    while (@("20261121", "65344194", "52824960") -contains $Seed) { $Seed = [string](Get-Random -Minimum 1000000 -Maximum 99999999) }
+    while (@("20261121", "65344194", "52824960", "42189044") -contains $Seed) { $Seed = [string](Get-Random -Minimum 1000000 -Maximum 99999999) }
 }
 $BaseDir = Split-Path -Parent (Split-Path -Parent $MyInvocation.MyCommand.Path)
 $RomsDir = Join-Path $BaseDir "roms"

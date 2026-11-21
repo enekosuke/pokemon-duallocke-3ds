@@ -1,10 +1,11 @@
-﻿# ==============================================================================
+# ==============================================================================
 #  Pokemon Y (USA v1.0, TitleID 0004000000055E00) - MOTOR NATIVO ARM32 PRO
 #  Gestiona 3 parches nativos 100% configurables sobre code.bin / exefs/code.ips:
 #    1. Muerte Permanente (NUZL @ 0x0053bedc, tras N medallas, PVP inmune, devuelve el objeto equipado)
 #    2. Hard Level Cap    (LCAP @ 0x003517d4 / 0x003502e8 / 0x0034f538)
 #       Bloquea Caramelos Raros y EXP en combate al nivel del gimnasio actual!
 #    3. Caramelos Raros Infinitos en Tiendas (Shops 1..8 @ 0x0053c8a2..0x0053c9b2)
+#    4. Huevos aleatorios (guarderia @ 0x003996b8): cualquier especie 1..721, forma normal
 # ==============================================================================
 
 param(
@@ -15,7 +16,8 @@ param(
     [int]$MartCandies = -1,
     [int]$AllowWild = -1,
     [int]$AllowTrainer = -1,
-    [int]$OnWipe = -1
+    [int]$OnWipe = -1,
+    [int]$RandomEggs = -1
 )
 
 $ErrorActionPreference = "Stop"
@@ -99,6 +101,19 @@ $Mart0CountOld = [byte[]]@(2)
 $RareCandyU16 = [byte[]]@(0x32, 0x00) # Item ID 50 (Caramelo Raro)
 $IceHealU16   = [byte[]]@(0x14, 0x00) # Item ID 20 (Antihielo original)
 
+# --- MOD 4: HUEVOS ALEATORIOS (guarderia) ---
+# La funcion que crea el huevo (0x003995E0) guarda la especie en [r4+0x18] tras los casos de Nidoran,
+# Volbeat/Illumise y Manaphy. En 0x003996B8 se sustituye la comprobacion de Manaphy por:
+#   ldr r0,=RNG (literal 0x399E6C, el mismo que usa para Nidoran); r1 = 721; bl 0x1122A8 (rand 0..n-1);
+#   r0 += 1; strh r0,[r4,#0x18]   -> especie totalmente aleatoria 1..721 (legendarios incluidos)
+# y se anulan: el strheq de Manaphy (0x3996E4) y las dos copias de forma de la madre (0x3997F8, 0x399848),
+# para que el huevo nunca herede una forma que no exista en la especie nueva (queda forma 0).
+$EggOff      = 0x003996B8 - $CodeBase
+$EggNew      = HexToBytes "ac079fe52d1ea0e3011081e2f7e2f5eb010080e2b801c4e100f020e300f020e300f020e3"
+$EggOrig     = HexToBytes "040095e545e6f6eb840050e3000095050400951541e6f6eb011c40e2ea1051e294079f05"
+$EggNopOffs  = @((0x003996E4 - $CodeBase), (0x003997F8 - $CodeBase), (0x00399848 - $CodeBase))
+$EggNopOrig  = @((HexToBytes "b801c401"), (HexToBytes "1a00c4e5"), (HexToBytes "1a00c4e5"))
+$ArmNop      = HexToBytes "00f020e3"
 # --- MOD 2b: TOPE DE NIVEL EN COMBATE (DllBattle.cro) ---
 # La funcion de EXP del combate (DllBattle.cro +0x726A0) solo deja de dar EXP a nivel 100 y llama en bucle
 # a SetExp mientras "suba de nivel". Con el tope, SetExp recorta la EXP real y el bucle nunca termina
@@ -188,6 +203,7 @@ function Load-Config {
         level_cap     = $true
         caps          = @(12, 25, 32, 34, 37, 42, 48, 59, 68)
         mart_candies  = $true
+        random_eggs   = $true
     }
     if (Test-Path $CfgJson) {
         try {
@@ -200,6 +216,7 @@ function Load-Config {
             if ($null -ne $j.level_cap)     { $cfg.level_cap     = [bool]$j.level_cap }
             if ($null -ne $j.caps -and $j.caps.Count -eq 9) { $cfg.caps = @($j.caps | ForEach-Object { [int]$_ }) }
             if ($null -ne $j.mart_candies)  { $cfg.mart_candies  = [bool]$j.mart_candies }
+            if ($null -ne $j.random_eggs)   { $cfg.random_eggs   = [bool]$j.random_eggs }
         } catch {}
     }
     return $cfg
@@ -271,6 +288,10 @@ function Apply-All($cfg) {
         [void]$records.Add(@($Mart0PtrOff,   $Mart0PtrNew))
         [void]$records.Add(@($Mart0CountOff, $Mart0CountNew))
     }
+    if ($cfg.random_eggs) {
+        [void]$records.Add(@($EggOff, $EggNew))
+        foreach ($o in $EggNopOffs) { [void]$records.Add(@($o, $ArmNop)) }
+    }
 
     $modDir   = Join-Path $BaseDir "tools\azahar\user\load\mods\$TitleId"
     $exefsDir = Join-Path $modDir "exefs"
@@ -324,6 +345,13 @@ function Apply-All($cfg) {
         [Array]::Copy($m0l, 0, $data, $Mart0ListOff, $m0l.Length)
         [Array]::Copy($m0p, 0, $data, $Mart0PtrOff, $m0p.Length)
         [Array]::Copy($m0c, 0, $data, $Mart0CountOff, $m0c.Length)
+        # 4. Huevos aleatorios
+        $eb = if ($cfg.random_eggs) { $EggNew } else { $EggOrig }
+        [Array]::Copy($eb, 0, $data, $EggOff, $eb.Length)
+        for ($i = 0; $i -lt 3; $i++) {
+            $nb = if ($cfg.random_eggs) { $ArmNop } else { $EggNopOrig[$i] }
+            [Array]::Copy($nb, 0, $data, $EggNopOffs[$i], 4)
+        }
         [System.IO.File]::WriteAllBytes($lumaBin, $data)
         Copy-Item $lumaBin $exefsBin -Force
     }
@@ -336,13 +364,14 @@ function Apply-All($cfg) {
     Write-Host "  2. Hard Level Cap Nativo:    $(if ($cfg.level_cap) { "ACTIVADO -> [$($cfg.caps -join ', ')]" } else { 'DESACTIVADO' })"
     Write-Host "     Tope en combate (DllBattle.cro): $battleState"
     Write-Host "  3. Caramelos en Tiendas:     $(if ($cfg.mart_candies) { 'ACTIVADO (infinitos por 10 pokedolares en todas las Tiendas)' } else { 'DESACTIVADO' })"
+    Write-Host "  4. Huevos aleatorios:        $(if ($cfg.random_eggs) { 'ACTIVADO (guarderia: cualquier especie, legendarios incluidos)' } else { 'DESACTIVADO' })"
     Write-Host "  Parche IPS:                  $ipsExefs"
     Write-Host ""
     Write-Host "NOTA: Si Azahar estaba abierto, guarda partida, cierralo y vuelvelo a abrir." -ForegroundColor Yellow
 }
 
 $cfg = Load-Config
-$hasArgs = $Apply -or ($Permadeath -ge 0) -or ($MinBadges -ge 0) -or ($LevelCap -ge 0) -or ($MartCandies -ge 0) -or ($AllowWild -ge 0) -or ($AllowTrainer -ge 0) -or ($OnWipe -ge 0)
+$hasArgs = $Apply -or ($Permadeath -ge 0) -or ($MinBadges -ge 0) -or ($LevelCap -ge 0) -or ($MartCandies -ge 0) -or ($AllowWild -ge 0) -or ($AllowTrainer -ge 0) -or ($OnWipe -ge 0) -or ($RandomEggs -ge 0)
 
 if ($hasArgs) {
     if ($Permadeath -ge 0)   { $cfg.permadeath    = ($Permadeath -ne 0) }
@@ -352,6 +381,7 @@ if ($hasArgs) {
     if ($AllowWild -ge 0)    { $cfg.allow_wild    = ($AllowWild -ne 0) }
     if ($AllowTrainer -ge 0) { $cfg.allow_trainer = ($AllowTrainer -ne 0) }
     if ($OnWipe -ge 0)       { $cfg.on_wipe_mode  = $OnWipe }
+    if ($RandomEggs -ge 0)   { $cfg.random_eggs   = ($RandomEggs -ne 0) }
     Apply-All $cfg
     exit 0
 }
@@ -369,6 +399,7 @@ while ($true) {
     Write-Host "  [6] Muertes en salvajes:      $(if ($cfg.allow_wild) { 'SI' } else { 'NO' })"
     Write-Host "  [7] Muertes en entrenadores:  $(if ($cfg.allow_trainer) { 'SI' } else { 'NO' })"
     Write-Host "  [8] En blackout total:        $(if ($cfg.on_wipe_mode -eq 0) { 'Dejar solo slot 0 (anti-crash)' } else { 'No borrar ninguno' })"
+    Write-Host "  [9] Huevos aleatorios:        $(if ($cfg.random_eggs) { 'ACTIVADO' } else { 'DESACTIVADO' })  (guarderia: cualquier especie)"
     Write-Host "  ----------------------------------------------------------------"
     Write-Host "  [G] Guardar y aplicar todo en Azahar"
     Write-Host "  [S] Salir sin guardar"
@@ -389,6 +420,7 @@ while ($true) {
         "6" { $cfg.allow_wild = -not $cfg.allow_wild }
         "7" { $cfg.allow_trainer = -not $cfg.allow_trainer }
         "8" { $cfg.on_wipe_mode = 1 - $cfg.on_wipe_mode }
+        "9" { $cfg.random_eggs = -not $cfg.random_eggs }
         "g" { Apply-All $cfg; break }
         "s" { break }
     }
