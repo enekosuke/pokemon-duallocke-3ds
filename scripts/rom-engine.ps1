@@ -95,6 +95,80 @@ $Mart0CountOld = [byte[]]@(2)
 $RareCandyU16 = [byte[]]@(0x32, 0x00) # Item ID 50 (Caramelo Raro)
 $IceHealU16   = [byte[]]@(0x14, 0x00) # Item ID 20 (Antihielo original)
 
+# --- MOD 2b: TOPE DE NIVEL EN COMBATE (DllBattle.cro) ---
+# La funcion de EXP del combate (DllBattle.cro +0x726A0) solo deja de dar EXP a nivel 100 y llama en bucle
+# a SetExp mientras "suba de nivel". Con el tope, SetExp recorta la EXP real y el bucle nunca termina
+# (cuelgue al debilitar a un rival con un Pokemon en el tope). Parche: comparar con el tope en vez de 100.
+#   +0x726B4: ldrb r0,[r0,#0x18] -> bl cave      +0x726B8: cmp r0,#100 -> nop      (+0x726BC bhs sin tocar)
+#   cave en +0xCD37C (relleno libre tras el codigo): push{r3,lr}; ldr ip,=get_cap; blx ip;
+#   ldrb r1,[r4,#0x18]; cmp r1,r0; mov r0,r1; pop{r3,pc}; .word 0x003517E4
+$BattleCroName   = "DllBattle.cro"
+$BattleHookOff   = 0x726B4
+$BattleHookOrig  = HexToBytes "1800d0e5640050e3"
+$BattleHookNew   = HexToBytes "306b01eb00f020e3"
+$BattleCaveOff   = 0xCD37C
+$BattleCaveBytes = HexToBytes "08402de910c09fe53cff2fe11810d4e5000051e10100a0e10880bde8e4173500"
+
+$romfsExtractCs = @"
+using System; using System.IO; using System.Text;
+public static class RomfsExtract {
+    public static byte[] RootFile(string cciPath, string fileName) {
+        using (var fs = new FileStream(cciPath, FileMode.Open, FileAccess.Read, FileShare.Read))
+        using (var br = new BinaryReader(fs)) {
+            fs.Seek(0x120, SeekOrigin.Begin);
+            long p0 = (long)br.ReadUInt32() * 0x200;
+            fs.Seek(p0 + 0x1B0, SeekOrigin.Begin);
+            long romfs = p0 + (long)br.ReadUInt32() * 0x200;
+            long l3 = romfs + 0x1000;
+            fs.Seek(l3, SeekOrigin.Begin);
+            br.ReadUInt32(); br.ReadUInt32(); br.ReadUInt32();
+            uint dmo = br.ReadUInt32(), dml = br.ReadUInt32();
+            br.ReadUInt32(); br.ReadUInt32();
+            uint fmo = br.ReadUInt32(), fml = br.ReadUInt32();
+            uint dataOff = br.ReadUInt32();
+            fs.Seek(l3 + dmo, SeekOrigin.Begin); byte[] dm = br.ReadBytes((int)dml);
+            fs.Seek(l3 + fmo, SeekOrigin.Begin); byte[] fm = br.ReadBytes((int)fml);
+            int fe = BitConverter.ToInt32(dm, 12);
+            while (fe != -1) {
+                int sib = BitConverter.ToInt32(fm, fe + 4);
+                long off = BitConverter.ToInt64(fm, fe + 8), sz = BitConverter.ToInt64(fm, fe + 16);
+                int nl = BitConverter.ToInt32(fm, fe + 28);
+                if (Encoding.Unicode.GetString(fm, fe + 32, nl) == fileName) {
+                    fs.Seek(l3 + dataOff + off, SeekOrigin.Begin); return br.ReadBytes((int)sz);
+                }
+                fe = sib;
+            }
+            return null;
+        }
+    }
+}
+"@
+
+function Set-BattleCroPatch([bool]$enable, [string]$modDir) {
+    $romfsDir = Join-Path $modDir "romfs"
+    $target   = Join-Path $romfsDir $BattleCroName
+    if (-not $enable) {
+        if (Test-Path $target) { Remove-Item $target -Force }
+        return "quitado (combate original)"
+    }
+    $cci = Get-ChildItem -Path (Join-Path $BaseDir "roms") -File -ErrorAction SilentlyContinue | Where-Object { $_.Extension -in ".cci", ".3ds" } | Select-Object -First 1
+    if (-not $cci) { throw "No hay ROM .cci/.3ds en roms\ para extraer $BattleCroName" }
+    if (-not ("RomfsExtract" -as [type])) { Add-Type -TypeDefinition $romfsExtractCs -Language CSharp }
+    $cro = [RomfsExtract]::RootFile($cci.FullName, $BattleCroName)
+    if (-not $cro) { throw "No se encontro $BattleCroName dentro de la ROM" }
+    for ($i = 0; $i -lt 8; $i++) {
+        if ($cro[$BattleHookOff + $i] -ne $BattleHookOrig[$i]) { throw "$BattleCroName inesperado (bytes del hook distintos). No se aplica." }
+    }
+    for ($i = 0; $i -lt $BattleCaveBytes.Length; $i++) {
+        if ($cro[$BattleCaveOff + $i] -ne 0) { throw "$BattleCroName inesperado (la cueva no esta vacia). No se aplica." }
+    }
+    [Array]::Copy($BattleHookNew,   0, $cro, $BattleHookOff, $BattleHookNew.Length)
+    [Array]::Copy($BattleCaveBytes, 0, $cro, $BattleCaveOff, $BattleCaveBytes.Length)
+    New-Item -ItemType Directory -Force -Path $romfsDir | Out-Null
+    [System.IO.File]::WriteAllBytes($target, $cro)
+    return "aplicado (sin EXP en combate al llegar al tope)"
+}
+
 function Load-Config {
     $cfg = [ordered]@{
         permadeath    = $true
@@ -245,10 +319,13 @@ function Apply-All($cfg) {
         Copy-Item $lumaBin $exefsBin -Force
     }
 
+    $battleState = Set-BattleCroPatch ([bool]$cfg.level_cap) $modDir
+
     Write-Host ""
     Write-Host "[OK] MOTOR NATIVO ARM32 PRO APLICADO EN AZAHAR!" -ForegroundColor Green
     Write-Host "  1. Muerte Permanente:        $(if ($cfg.permadeath) { "ACTIVADA (tras $($cfg.min_badges) medalla/s, PVP inmune)" } else { 'DESACTIVADA' })"
     Write-Host "  2. Hard Level Cap Nativo:    $(if ($cfg.level_cap) { "ACTIVADO -> [$($cfg.caps -join ', ')]" } else { 'DESACTIVADO' })"
+    Write-Host "     Tope en combate (DllBattle.cro): $battleState"
     Write-Host "  3. Caramelos en Tiendas:     $(if ($cfg.mart_candies) { 'ACTIVADO (infinitos por 10 pokedolares en todas las Tiendas)' } else { 'DESACTIVADO' })"
     Write-Host "  Parche IPS:                  $ipsExefs"
     Write-Host ""

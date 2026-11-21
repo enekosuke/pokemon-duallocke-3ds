@@ -91,6 +91,7 @@ Todo el pipeline se aplica automáticamente al ejecutar `scripts/randomize-auto.
 4. **Hard Level Cap nativo ARM32 (`scripts/rom-engine.ps1`):**
    - Topes por defecto según número de medallas (`0..8`): **`[12, 25, 32, 34, 37, 42, 48, 59, 68]`**.
    - Bloquea tanto el uso de Caramelos Raros desde la Mochila como la ganancia de nivel/EXP por combate al alcanzar el tope actual.
+   - **En combate (`romfs/DllBattle.cro`, generado por `rom-engine.ps1` desde la ROM):** la función de EXP del combate (`+0x726A0`) solo dejaba de dar EXP a nivel 100 y llama en bucle a `SetExp` mientras "suba de nivel"; con el tope eso provocaba un **cuelgue al debilitar a un rival** con un Pokémon en el tope. Ahora compara con el tope (`bl` a una cueva en `+0xCD37C` que llama a `get_cap` `0x003517E4`): en el tope no se gana EXP. Si se desactiva el tope, el archivo se elimina.
    - Respeta combates PSS con reglas Nv. 50 (filtra por dirección de retorno `lr >= 0x00540000` perteneciente a `DllBattle.cro`).
 5. **Muerte Permanente nativa ARM32 (`scripts/rom-engine.ps1`):**
    - A partir de `min_badges` (por defecto `1`, es decir, tras ganar la 1ª Medalla), cualquier Pokémon debilitado en combate salvaje o entrenador es eliminado definitivamente del equipo al salir del combate.
