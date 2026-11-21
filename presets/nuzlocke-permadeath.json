@@ -1,0 +1,7 @@
+﻿{
+    "enabled":  true,
+    "min_badges":  1,
+    "on_wipe_mode":  0,
+    "allow_wild":  true,
+    "allow_trainer":  true
+}

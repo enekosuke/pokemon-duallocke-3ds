@@ -23,6 +23,7 @@ Una vez completada la instalación inicial:
 | `5-Instalar-Mod-LayeredFS.bat` | Instala manualmente una carpeta de mod LayeredFS en Azahar. |
 | `6-Backup-Save.bat` | Hace copia de seguridad de tu partida guardada (`main`) y te muestra su ruta exacta. |
 | `7-Tracker-DualLocke.html` | Tracker visual en navegador (marcador PVP entre vosotros, vidas, muertes, rutas y *Level Caps*). |
+| `8-Configurar-Muerte-Permanente.bat` | **Motor nativo ARM32 (parche `code.ips`/`code.bin`):** hace que a partir de la 1ª medalla (configurable `0..8` o ON/OFF), cualquier Pokémon debilitado al terminar un combate desaparezca automáticamente del equipo (inmune a combates PVP por PSS y con protección anti-crash en blackout). |
 | `presets/pokemon-y-randomlocke.rnqs` | Preset exacto de reglas (Pokémon, habilidades sin Superguarda, ataques, MTs, objetos, gimnasios/entrenadores random + evoluciones por intercambio activadas + Caramelos baratos en tiendas). |
 | `scripts/randomize-auto.ps1` | Genera e instala automáticamente el mod LayeredFS con las mismas reglas (`presets/pokemon-y-randomlocke.rnqs`) y una **semilla aleatoria nueva** por defecto (o `-Seed <numero>` si queréis compartir la misma). |
 

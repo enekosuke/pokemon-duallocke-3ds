@@ -96,5 +96,11 @@ foreach ($td in $titleDirs) {
     Write-Host "[OK] Mod instalado automaticamente en Azahar: $dest" -ForegroundColor Green
 }
 
+# Aplicar automaticamente el parche ARM32 de Muerte Permanente (a partir de 1a medalla) si es Pokemon Y
+$permadeathScript = Join-Path $BaseDir "scripts\nuzlocke-permadeath.ps1"
+if ((Test-Path $permadeathScript) -and (Test-Path (Join-Path $ModsTargetRoot "0004000000055E00"))) {
+    & $permadeathScript -Apply
+}
+
 Write-Host ""
 Write-Host "LISTO! Ya puedes abrir 0-JUGAR-POKEMON-Y.bat con un solo clic." -ForegroundColor Cyan
