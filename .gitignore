@@ -12,11 +12,15 @@ roms/*.7z
 # Copias de seguridad de partidas y mods generados
 saves-backup/*
 !saves-backup/.gitkeep
+backups/
 mods-para-compartir/*
 !mods-para-compartir/LEEME.txt
 
 # Archivos temporales y config personal
 presets/online-config.json
+__pycache__/
+**/__pycache__/
+*.pyc
 *.log
 *.tmp
 .DS_Store
