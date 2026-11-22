@@ -15,7 +15,7 @@
 #  Uso:  battle-panel.ps1               -> abre el panel (se cierra solo al cerrar Azahar)
 #        battle-panel.ps1 -EnsureConfig -> activa el RPC en qt-config.ini (con Azahar cerrado)
 # ==============================================================================
-param([switch]$EnsureConfig, [switch]$Demo, [int]$DemoSpecies = 697, [string]$Snapshot, [string]$TestDump, [switch]$TestRpc, [string]$AzaharExe)
+param([switch]$EnsureConfig, [switch]$Demo, [int]$DemoSpecies = 697, [int]$DemoAbility = 0, [int]$DemoMine = 394, [int]$DemoMineAbility = 0, [string]$Snapshot, [string]$TestDump, [switch]$TestRpc, [string]$AzaharExe)
 
 $ErrorActionPreference = "Stop"
 $BaseDir = Split-Path -Parent (Split-Path -Parent $MyInvocation.MyCommand.Path)
@@ -179,7 +179,7 @@ public static class Bp
         catch { return null; }
     }
 
-    public class Mon { public int Species, MaxHp, Hp, Item, Level, Id; }
+    public class Mon { public int Species, MaxHp, Hp, Item, Level, Id, Ability; }
 
     static Mon ParseMon(byte[] s)
     {
@@ -187,7 +187,7 @@ public static class Bp
         var m = new Mon();
         m.Species = BitConverter.ToUInt16(s, 0x0C); m.MaxHp = BitConverter.ToUInt16(s, 0x0E);
         m.Hp = BitConverter.ToUInt16(s, 0x10); m.Item = BitConverter.ToUInt16(s, 0x12);
-        m.Level = s[0x18]; m.Id = s[0x19];
+        m.Level = s[0x18]; m.Id = s[0x19]; m.Ability = BitConverter.ToUInt16(s, 0x16);
         if (m.Species < 1 || m.Species > 721 || m.Level < 1 || m.Level > 100 || m.MaxHp == 0 || m.Hp > m.MaxHp) return null;
         return m;
     }
@@ -277,12 +277,31 @@ function Get-Info([int]$sp) {
         Abil = @([int]$p[0x18], [int]$p[0x19], [int]$p[0x1A])
     }
 }
-function Get-Mult([int]$atk, $defTypes) { $m = 1.0; foreach ($t in $defTypes) { $m *= $Chart[$atk,$t] }; return $m }
+# Habilidades que cambian el dano recibido (id Gen 6 -> tipo: multiplicador). 25 = Superguarda (solo le dan los supereficaces)
+$AbilityMods = @{
+    18 = @{ 9 = 0.0 }              # Absorbe Fuego: inmune a Fuego
+    26 = @{ 4 = 0.0 }              # Levitacion: inmune a Tierra
+    10 = @{ 12 = 0.0 }             # Absorbe Elec
+    31 = @{ 12 = 0.0 }             # Pararrayos
+    78 = @{ 12 = 0.0 }             # Electromotor
+    11 = @{ 10 = 0.0 }             # Absorbe Agua
+    114 = @{ 10 = 0.0 }            # Colector
+    87 = @{ 10 = 0.0; 9 = 1.25 }   # Piel Seca: inmune a Agua, Fuego x1.25
+    157 = @{ 11 = 0.0 }            # Herbivoro
+    47 = @{ 9 = 0.5; 14 = 0.5 }    # Sebo: Fuego y Hielo a la mitad
+    85 = @{ 9 = 0.5 }              # Ignifugo: Fuego a la mitad
+}
+function Get-Mult([int]$atk, $defTypes, [int]$abil = 0) {
+    $m = 1.0; foreach ($t in $defTypes) { $m *= $Chart[$atk,$t] }
+    if ($AbilityMods.ContainsKey($abil) -and $AbilityMods[$abil].ContainsKey($atk)) { $m *= $AbilityMods[$abil][$atk] }
+    if ($abil -eq 25 -and $m -lt 2) { $m = 0.0 }   # Superguarda
+    return $m
+}
 
 if ($TestDump -or $TestRpc) {
     if ($TestDump) { [Bp]::FileMem = [IO.File]::ReadAllBytes($TestDump); [Bp]::FileBase = 0x08000000 }
     $sw = [Diagnostics.Stopwatch]::StartNew(); $r = [Bp]::Poll(); $ms = $sw.ElapsedMilliseconds
-    if ($r) { "EN COMBATE ($ms ms) lista en 0x{0:X8}: rival {1} Nv{2} PS {3}/{4} | tuyo {5} Nv{6}" -f [Bp]::Cached, $SpeciesNames[$r[0].Species], $r[0].Level, $r[0].Hp, $r[0].MaxHp, $SpeciesNames[$r[1].Species], $r[1].Level }
+    if ($r) { "EN COMBATE ($ms ms) lista en 0x{0:X8}: rival {1} Nv{2} PS {3}/{4} hab {7} | tuyo {5} Nv{6} hab {8}" -f [Bp]::Cached, $SpeciesNames[$r[0].Species], $r[0].Level, $r[0].Hp, $r[0].MaxHp, $SpeciesNames[$r[1].Species], $r[1].Level, $AbilityNames[$r[0].Ability], $AbilityNames[$r[1].Ability] }
     else { "Sin combate ($ms ms) error='$([Bp]::LastError)'" }
     exit 0
 }
@@ -368,7 +387,7 @@ function Add-Stat($panel, [string]$label, [int]$v) {
     [void]$g.Children.Add($l); [void]$g.Children.Add($n); [void]$g.Children.Add($cell)
     [void]$panel.Children.Add($g)
 }
-function Fmt([double]$m) { if ($m -eq 4) { ' x4' } elseif ($m -eq 2) { ' x2' } elseif ($m -eq 0.25) { ' x1/4' } elseif ($m -eq 0.5) { ' x1/2' } else { '' } }
+function Fmt([double]$m) { if ($m -eq 1.25) { ' x1.25' } elseif ($m -eq 4) { ' x4' } elseif ($m -eq 2) { ' x2' } elseif ($m -eq 0.25) { ' x1/4' } elseif ($m -eq 0.5) { ' x1/2' } else { '' } }
 
 function Show-Mon($op, $me) {
     $i = Get-Info $op.Species
@@ -382,8 +401,8 @@ function Show-Mon($op, $me) {
     foreach ($p in 'Weak','Resist','Immune','Offense') { $ui[$p].Children.Clear() }
     $weak = @(); $res = @(); $immL = @()
     for ($a = 0; $a -lt 18; $a++) {
-        $m = Get-Mult $a $i.Types
-        if ($m -ge 2) { $weak += ,@($a, $m) } elseif ($m -eq 0) { $immL += $a } elseif ($m -lt 1) { $res += ,@($a, $m) }
+        $m = Get-Mult $a $i.Types $op.Ability
+        if ($m -ge 2) { $weak += ,@($a, $m) } elseif ($m -eq 0) { $immL += $a } elseif ($m -lt 1) { $res += ,@($a, $m) } elseif ($m -gt 1) { $weak += ,@($a, $m) }
     }
     foreach ($w in ($weak | Sort-Object { -$_[1] })) { [void]$ui.Weak.Children.Add((New-Badge $w[0] (Fmt $w[1]))) }
     foreach ($r in ($res | Sort-Object { $_[1] })) { [void]$ui.Resist.Children.Add((New-Badge $r[0] (Fmt $r[1]))) }
@@ -411,17 +430,26 @@ function Show-Mon($op, $me) {
     Add-Line $ui.Profile $defTxt '#6BB8FF'
     Add-Line $ui.Profile "$spdTxt ($($i.Spe))  -  $bulkTxt" '#C8D2E8'
 
-    $ab = @(); foreach ($x in $i.Abil[0], $i.Abil[1]) { if ($x -gt 0 -and $ab -notcontains $AbilityNames[$x]) { $ab += $AbilityNames[$x] } }
-    $hid = if ($i.Abil[2] -gt 0) { "  (oculta: $($AbilityNames[$i.Abil[2]]))" } else { '' }
-    $ui.Abil.Text = "Habilidad posible: " + ($ab -join ' / ') + $hid
+    if ($op.Ability -gt 0 -and $op.Ability -lt $AbilityNames.Count) {
+        $ui.Abil.Text = "Habilidad: " + $AbilityNames[$op.Ability] + $(if ($AbilityMods.ContainsKey($op.Ability) -or $op.Ability -eq 25) { "  (ya incluida en las debilidades de arriba)" } else { '' })
+    } else {
+        $ab = @(); foreach ($x in $i.Abil[0], $i.Abil[1]) { if ($x -gt 0 -and $ab -notcontains $AbilityNames[$x]) { $ab += $AbilityNames[$x] } }
+        $hid = if ($i.Abil[2] -gt 0) { "  (oculta: $($AbilityNames[$i.Abil[2]]))" } else { '' }
+        $ui.Abil.Text = "Habilidad posible: " + ($ab -join ' / ') + $hid
+    }
 
     if ($me) {
         $mi = Get-Info $me.Species
-        $best = 1.0; foreach ($t in $mi.Types) { $best = [Math]::Max($best, (Get-Mult $t $i.Types)) }
-        $worst = 1.0; foreach ($t in $i.Types) { $worst = [Math]::Max($worst, (Get-Mult $t $mi.Types)) }
-        $l1 = if ($best -ge 2) { "Tus ataques de tipo $(($mi.Types | ForEach-Object { $TypeNames[$_] }) -join '/') le hacen x$best." } elseif ($best -lt 1) { "Tus ataques de tu tipo le hacen poco." } else { "Tus ataques de tu tipo le hacen daño normal." }
-        $l2 = if ($worst -ge 2) { "Cuidado: sus ataques de su tipo te hacen x$worst." } elseif ($worst -lt 1) { "Sus ataques de su tipo te hacen poco." } else { "Sus ataques de su tipo te hacen daño normal." }
-        $ui.Mine.Text = "Tu $($mi.Name): $l1 $l2"
+        $best = 0.0; foreach ($t in $mi.Types) { $best = [Math]::Max($best, (Get-Mult $t $i.Types $op.Ability)) }
+        $worst = 0.0; foreach ($t in $i.Types) { $worst = [Math]::Max($worst, (Get-Mult $t $mi.Types $me.Ability)) }
+        $l1 = if ($best -ge 2) { "Tus ataques de tipo $(($mi.Types | ForEach-Object { $TypeNames[$_] }) -join '/') le hacen x$best." } elseif ($best -eq 0) { "Tus ataques de tu tipo NO le hacen nada." } elseif ($best -lt 1) { "Tus ataques de tu tipo le hacen poco." } else { "Tus ataques de tu tipo le hacen daño normal." }
+        $l2 = if ($worst -ge 2) { "Cuidado: sus ataques de su tipo te hacen x$worst." } elseif ($worst -eq 0) { "Sus ataques de su tipo NO te hacen nada." } elseif ($worst -lt 1) { "Sus ataques de su tipo te hacen poco." } else { "Sus ataques de su tipo te hacen daño normal." }
+        $l3 = ''
+        if ($AbilityMods.ContainsKey($me.Ability)) {
+            $imm = @($AbilityMods[$me.Ability].Keys | Where-Object { $AbilityMods[$me.Ability][$_] -eq 0 } | ForEach-Object { $TypeNames[$_] })
+            if ($imm.Count -gt 0) { $l3 = " Tu habilidad $($AbilityNames[$me.Ability]) te hace inmune a: $($imm -join ', ')." }
+        }
+        $ui.Mine.Text = "Tu $($mi.Name): $l1 $l2$l3"
         $ui.MineBox.Visibility = 'Visible'
     } else { $ui.MineBox.Visibility = 'Collapsed' }
 }
@@ -458,7 +486,7 @@ $timer.Add_Tick({
         if ([Bp]::IsIconic($az.MainWindowHandle)) { $win.Hide(); return }
         $mons = [Bp]::Poll()
         if ($mons) {
-            $key = "$($mons[0].Species)|$($mons[0].Hp)|$($mons[0].Level)|$($mons[1].Species)"
+            $key = "$($mons[0].Species)|$($mons[0].Hp)|$($mons[0].Level)|$($mons[0].Ability)|$($mons[1].Species)|$($mons[1].Ability)"
             $changed = ($key -ne $script:lastKey)
             if ($changed) { Show-Mon $mons[0] $mons[1]; $script:lastKey = $key }
             if (-not $win.IsVisible) { $win.Show() }
@@ -479,8 +507,8 @@ $timer.Add_Tick({
 })
 
 if ($Demo) {
-    $o = New-Object Bp+Mon; $o.Species = $DemoSpecies; $o.Level = 21; $o.MaxHp = 65; $o.Hp = 40
-    $m = New-Object Bp+Mon; $m.Species = 394; $m.Level = 25; $m.MaxHp = 68; $m.Hp = 62
+    $o = New-Object Bp+Mon; $o.Species = $DemoSpecies; $o.Level = 21; $o.MaxHp = 65; $o.Hp = 40; $o.Ability = $DemoAbility
+    $m = New-Object Bp+Mon; $m.Species = $DemoMine; $m.Level = 25; $m.MaxHp = 68; $m.Hp = 62; $m.Ability = $DemoMineAbility
     Show-Mon $o $m
     if ($Snapshot) {
         $root = $win.Content; $win.Content = $null
