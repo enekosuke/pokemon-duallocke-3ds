@@ -34,5 +34,9 @@ if not exist "%~dp0tools\azahar\user\load\mods\0004000000055E00\romfs" (
 )
 
 echo Iniciando Pokemon DualLocke 3DS...
+if exist "%~dp0scripts\battle-panel.ps1" (
+    powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0scripts\battle-panel.ps1" -EnsureConfig >nul
+    start "" powershell -NoProfile -STA -WindowStyle Hidden -ExecutionPolicy Bypass -File "%~dp0scripts\battle-panel.ps1"
+)
 cd /d "%~dp0tools\azahar"
 start "" "%AZAHAR%" "%ROM_FILE%"

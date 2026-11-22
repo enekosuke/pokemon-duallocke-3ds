@@ -27,7 +27,7 @@ PASO 1. ACTUALIZAR EL CÓDIGO (con o sin Git)
   Expand-Archive "$tmp\main.zip" -DestinationPath $tmp -Force
   robocopy "$tmp\pokemon-duallocke-3ds-main" "C:\Users\Enara\Downloads\Pokemon-DualLocke-3DS" /E /XD roms tools saves-backup .git /NFL /NDL /NJH /NJS
   (robocopy devuelve códigos 0 a 7 cuando va bien; solo 8 o más es error.) Esto sobrescribe scripts, presets, README y .bat con la última versión y NO toca roms\, tools\ ni saves-backup\. Después borra $tmp.
-- Comprueba que existen y están actualizados: scripts\enhance-romfs.ps1 (debe contener "MAXCHAIN", "PatchTradeEvolutions" y "PatchNoWildLegendaries"), scripts\randomize-auto.ps1 (debe contener "Xmx3072M" y "42189044") y scripts\rom-engine.ps1 (debe contener "random_eggs").
+- Comprueba que existen y están actualizados: scripts\enhance-romfs.ps1 (debe contener "MAXCHAIN", "PatchTradeEvolutions" y "PatchNoWildLegendaries"), scripts\randomize-auto.ps1 (debe contener "Xmx3072M" y "42189044") y scripts\rom-engine.ps1 (debe contener "random_eggs") y scripts\battle-panel.ps1 (panel de combate; debe existir).
 - NO ejecutes setup.ps1 ni 1-Instalar-o-Reparar-Todo.bat (ya está todo instalado y no hace falta).
 
 PASO 2. CONFIGURACIÓN LIGERA DE AZAHAR (debe quedar EXACTA)
@@ -38,7 +38,8 @@ Abre tools\azahar\user\config\qt-config.ini y comprueba estas claves. Para cada 
 - async_shader_compilation = true
 - disable_right_eye_render = true
 - Paths\language = es
-Si ya estaban bien, no escribas nada. Muéstrame al final las 6 líneas finales.
+- enable_rpc_server = true (lo necesita el panel de combate; si no está, ejecuta: powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\battle-panel.ps1 -EnsureConfig)
+Si ya estaban bien, no escribas nada. Muéstrame al final las 7 líneas finales.
 
 PASO 3. COPIA DE SEGURIDAD DEL SAVE Y BORRADO LIMPIO
 - Ruta del save: tools\azahar\user\sdmc\Nintendo 3DS\00000000000000000000000000000000\00000000000000000000000000000000\title\00040000\00055e00\data
@@ -77,6 +78,7 @@ Cuando termines, escríbeme esto en castellano claro:
 1. Qué semilla me ha tocado y que es distinta de la de Eneko (mismas reglas, Pokémon distintos).
 2. Cómo jugar: doble clic en "Jugar Pokemon Y Randomlocke" del Escritorio. Es partida nueva: la primera vez sale una pantalla para elegir idioma, elige Spanish, confirma con "Begin game" y sigue la intro. La tecla Tab activa y desactiva el turbo.
 3. Reglas del sistema: a partir de la 1ª medalla, los Pokémon debilitados se pierden para siempre (en combates PVP no) y el objeto que llevaban equipado vuelve a la mochila. No salen legendarios en hierba, cuevas, agua ni cañas. Los huevos de la Guardería son de un Pokémon totalmente aleatorio (puede salir cualquiera, incluso legendarios, que tardan mucho en eclosionar). Hay un tope de nivel según las medallas que llevas (12, 25, 32, 34, 37, 42, 48, 59 y 68). El Caramelo Raro se compra en las tiendas por 10 pokédolares. Las evoluciones finales fuertes y los legendarios no aparecen hasta pasar el 4º gimnasio. Los Pokémon que evolucionaban por intercambio evolucionan solos al subir de nivel (30, 37, 45 o 50 según el Pokémon), sin objeto ni intercambio.
+3b. Panel de combate: al jugar con el acceso directo, en cada combate aparece una ventana al lado de Azahar con el Pokémon rival (tipos, a qué es débil, qué resiste, estadísticas, si es atacante físico o especial, velocidad y habilidades). Se oculta sola al salir del combate y se cierra al cerrar Azahar.
 4. Antes del primer combate online: con el juego detenido, en Azahar ir a Emulación → Configurar → Sistema y cambiar "Nombre de usuario" (por defecto AZAHAR) por mi nombre, porque si los dos tenemos el mismo la sala no nos deja entrar. Para conectar se usa Multijugador → Conectar Directamente a Sala (NO "Crear Sala").
 5. Cómo conectarme con Eneko: abrir Radmin VPN, encenderlo y unirme a la red que me diga él. Después doble clic en "Jugar Online Pokemon Y" y elegir la opción 2 (Unirse a sala), poner la IP 26.x.x.x de Eneko y mi apodo. En el juego usar el combate inalámbrico local del PSS, SIN pulsar el botón azul de Internet, y con el turbo desactivado durante el combate.
 6. Plan B si falla la conexión: 4-Abrir-PKHeX.bat, abrir mi partida y exportar el equipo a Pokémon Showdown en [Gen 6] Custom Game.

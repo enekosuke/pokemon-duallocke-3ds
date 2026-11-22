@@ -63,6 +63,12 @@ function Preconfigure-Multiplayer($ip, $port, $nick) {
 function Launch-PokemonY {
     $rom = Get-ChildItem -Path $RomsDir -File -ErrorAction SilentlyContinue |
         Where-Object { $_.Extension -in ".cci", ".3ds", ".cxi" } | Select-Object -First 1
+    # Panel de combate (ventana lateral con info del rival): activa el RPC antes de abrir Azahar y lanza el panel
+    $panel = Join-Path $PSScriptRoot "battle-panel.ps1"
+    if (Test-Path $panel) {
+        & powershell -NoProfile -ExecutionPolicy Bypass -File $panel -EnsureConfig | Out-Null
+        Start-Process powershell -WindowStyle Hidden -ArgumentList @("-NoProfile", "-STA", "-ExecutionPolicy", "Bypass", "-File", "`"$panel`"")
+    }
     if ($rom) {
         Start-Process -FilePath $AzaharExe -ArgumentList "`"$($rom.FullName)`"" -WorkingDirectory $AzaharDir
     } else {
